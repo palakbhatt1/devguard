@@ -36,11 +36,24 @@ class CIFailureAnalyzer:
                 response_model=CIFailureAnalysisResult,
             )
             return res
-        except Exception:
+        except Exception as e:
             # Fallback to rule pre-classification if LLM fails
+            err_line = ""
+            for line in cleaned_log.splitlines():
+                if any(kw in line.lower() for kw in ["failed", "error", "exception", "exit code"]):
+                    err_line = line.strip()
+                    break
+
+            root_cause = f"Category '{pre_class}' detected."
+            if err_line:
+                root_cause += f" Trigger line: '{err_line}'"
+
+            fix = f"Investigate '{pre_class}' error in {job_name}. Inspect tracebacks and fix broken assertions or environment."
+
             return CIFailureAnalysisResult(
                 failure_category=pre_class,
-                root_cause=f"Rule-based classification identified failure category as '{pre_class}'.",
-                suggested_fix="Check step details in the GitHub Actions build log.",
+                root_cause=root_cause,
+                suggested_fix=fix,
                 confidence=0.7,
             )
+
