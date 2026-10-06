@@ -1,0 +1,10 @@
+devguard.db
+*.db
+*.sqlite3
+*.egg-info/
+__pycache__/
+*.pyc
+.cache/
+.pytest_cache/
+dist/
+build/

@@ -4,7 +4,7 @@ repos:
     hooks:
       - id: devguard-secret-scan
         name: DevGuard Secret Leak Scanner
-        entry: python -m cli.main scan .
+        entry: devguard scan .
         language: system
         types: [text]
         pass_filenames: false

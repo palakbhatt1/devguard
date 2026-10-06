@@ -13,7 +13,7 @@ from app.llm import get_llm_client
 
 app = typer.Typer(
     name="devguard",
-    help="🛡️ AI DevGuard - Secret Scanner & Error Explainer CLI",
+    help="AI DevGuard - Secret Scanner & Error Explainer CLI",
     add_completion=False,
 )
 console = Console()
@@ -26,7 +26,7 @@ def scan_command(
     strict: bool = typer.Option(True, "--strict/--no-strict", help="Exit with non-zero code if real secrets are found"),
 ):
     """Scan code files or git working directory for exposed secret keys and API tokens."""
-    console.print(f"[bold blue]🛡️ DevGuard Secret Scanner[/bold blue] - Scanning '[bold yellow]{path}[/bold yellow]'...")
+    console.print(f"[bold blue][DevGuard] Secret Scanner[/bold blue] - Scanning '[bold yellow]{path}[/bold yellow]'...")
 
     llm_client = get_llm_client() if use_llm else None
     scanner = SecretScanner(llm_client=llm_client)
@@ -47,7 +47,7 @@ def scan_command(
     real_secrets = [f for f in findings if f.is_real_secret]
 
     if not findings:
-        console.print("[bold green]✅ Clean! No secret leaks detected.[/bold green]")
+        console.print("[bold green][OK] Clean! No secret leaks detected.[/bold green]")
         sys.exit(0)
 
     table = Table(title="DevGuard Secret Findings Summary", show_header=True, header_style="bold magenta")
@@ -71,13 +71,13 @@ def scan_command(
 
     if real_secrets:
         console.print(
-            f"\n[bold red]❌ ALERT: Found {len(real_secrets)} REAL secret leak(s)![/bold red] "
+            f"\n[bold red][ALERT] Found {len(real_secrets)} REAL secret leak(s)![/bold red] "
             "Commit blocked for security protection."
         )
         if strict:
             sys.exit(1)
     else:
-        console.print("\n[bold yellow]⚠️ Found candidate findings, but all classified as placeholders/decoys.[/bold yellow]")
+        console.print("\n[bold yellow][WARN] Found candidate findings, but all classified as placeholders/decoys.[/bold yellow]")
         sys.exit(0)
 
 
@@ -86,7 +86,7 @@ def explain_command(
     target: str = typer.Argument(..., help="Path to traceback file OR raw traceback text string"),
 ):
     """Diagnose a Python traceback string or log file and display LLM explanation."""
-    console.print("[bold blue]⚡ DevGuard Error Explainer[/bold blue]")
+    console.print("[bold blue][DevGuard] Error Explainer[/bold blue]")
 
     traceback_text = target
     source_code = None
