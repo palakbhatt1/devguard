@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DejaQ UI Kit — Component Library &amp; Living Styleguide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="ui-style.css">
+  <style>
+    body {
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .header-bar {
+      padding: 24px 0 32px;
+      border-bottom: 1px solid var(--border-glass);
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-cream);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .component-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .component-box h3 {
+      font-size: 14px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--accent-blue);
+      margin-bottom: 16px;
+    }
+
+    .code-preview {
+      margin-top: 14px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--border-glass-subtle);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #94a5bd;
+      overflow-x: auto;
+    }
+
+    .stat-card {
+      background: rgba(14, 28, 56, 0.6);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stat-val {
+      font-size: 32px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1;
+      font-family: var(--font-body);
+    }
+
+    .stat-lbl {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-sky"></div>
+  <div class="bg-halftone-overlay"></div>
+
+  <div class="container">
+    <div class="header-bar">
+      <div>
+        <a href="demo-landing.html" class="brand">
+          <svg class="brand-star" viewBox="0 0 24 24">
+            <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+          </svg>
+          <span>DejaQ UI Kit</span>
+        </a>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;">Visual Component Catalog &amp; Implementation Library</p>
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <a href="demo-landing.html" class="btn btn-glass btn-sm">Landing Demo</a>
+        <a href="README.md" target="_blank" class="btn btn-cream btn-sm">Integration Guide</a>
+      </div>
+    </div>
+
+    <!-- 1. Color System & Design Tokens -->
+    <h2 class="section-title">1. Color System &amp; Design Tokens</h2>
+    <p class="section-subtitle">Consistent dark cosmic palette with cream highlights and glass accents.</p>
+    
+    <div class="grid-2">
+      <div class="component-box">
+        <h3>Surface &amp; Background Palette</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 100px; padding: 12px; background: #050a14; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 700;">#050a14</div>
+            <div style="font-size: 10px; color: var(--text-dim);">Dark Canvas</div>
+          </div>
+          <div style="flex: 1; min-width: 100px; padding: 12px; background: rgba(9, 20, 42, 0.7); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 700;">rgba(9,20,42)</div>
+            <div style="font-size: 10px; color: var(--text-dim);">Glass Card</div>
+          </div>
+          <div style="flex: 1; min-width: 100px; padding: 12px; background: #f0ece1; color: #0c1424; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 700;">#f0ece1</div>
+            <div style="font-size: 10px; color: #555;">Cream Accent</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-box">
+        <h3>Status Indicators</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <span class="badge-pill badge-green"><span class="badge-dot"></span> Active / Unique (#22c55e)</span>
+          <span class="badge-pill badge-amber"><span class="badge-dot"></span> Duplicate / Warning (#f59e0b)</span>
+          <span class="badge-pill badge-blue"><span class="badge-dot"></span> Info / Processing (#3b82f6)</span>
+          <span class="badge-pill badge-red"><span class="badge-dot"></span> Critical / Error (#ef4444)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Interactive Buttons -->
+    <h2 class="section-title">2. Buttons</h2>
+    <p class="section-subtitle">Tactile buttons featuring soft dropshadows, glass backdrops, and hover lifts.</p>
+
+    <div class="grid-2">
+      <div class="component-box">
+        <h3>Variants</h3>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+          <button class="btn btn-cream">Primary Cream &rarr;</button>
+          <button class="btn btn-glass">Glass Secondary <span class="play-circle">&#9655;</span></button>
+          <button class="btn btn-dark">Dark Action &rarr;</button>
+        </div>
+      </div>
+
+      <div class="component-box">
+        <h3>Sizes</h3>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+          <button class="btn btn-cream btn-sm">Small Button</button>
+          <button class="btn btn-cream">Standard Button</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Form Controls & Search Bar -->
+    <h2 class="section-title">3. Search &amp; Form Controls</h2>
+    <p class="section-subtitle">Deep navy input bars with specular glass borders and blue glowing focus rings.</p>
+
+    <div class="grid-2">
+      <div class="component-box">
+        <h3>Glass Search Bar</h3>
+        <div class="search-bar">
+          <svg class="search-icon" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="search-input" placeholder="Search questions, queries, documents...">
+          <button class="search-submit">&rarr;</button>
+        </div>
+      </div>
+
+      <div class="component-box">
+        <h3>Standard Inputs</h3>
+        <input type="text" class="search-input" style="width: 100%; background: rgba(4,10,24,0.7); border: 1px solid var(--border-glass); border-radius: 10px; padding: 10px 14px;" placeholder="Regular form input...">
+      </div>
+    </div>
+
+    <!-- 4. Result Cards & List Items -->
+    <h2 class="section-title">4. Cards &amp; Progress Bars</h2>
+    <p class="section-subtitle">Frosted glass result cards and gradient progress distribution bars.</p>
+
+    <div class="grid-2">
+      <div class="component-box">
+        <h3>Item Card</h3>
+        <div class="card-item">
+          <div class="card-item-header">
+            <span class="card-item-label"><span class="icon-plus">+</span> Candidate Title</span>
+            <span class="badge-pill badge-different"><span class="badge-check">&#10003;</span> Verified Unique</span>
+          </div>
+          <div class="card-item-text">What is quantum tunneling in condensed matter?</div>
+          <div class="card-item-sub" style="margin-top: 6px;">
+            <span style="font-size: 11px; color: var(--text-dim);">Cosine distance: 0.12</span>
+            <span class="card-item-score">Status: Accepted</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-box">
+        <h3>Metric Progress Tracks</h3>
+        <div class="cov-item">
+          <span class="cov-name">Accuracy</span>
+          <div class="cov-track"><div class="cov-bar" style="width: 88%;"></div></div>
+          <span class="cov-val">88%</span>
+        </div>
+        <div class="cov-item">
+          <span class="cov-name">Coverage</span>
+          <div class="cov-track"><div class="cov-bar cov-bar-amber" style="width: 54%;"></div></div>
+          <span class="cov-val">54%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Stat Counters -->
+    <h2 class="section-title">5. Quick Metric Stat Tiles</h2>
+    <p class="section-subtitle">Crisp numeric KPIs with clean mono tracking.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
+      <div class="stat-card">
+        <div class="stat-lbl">Questions Evaluated</div>
+        <div class="stat-val">12,480</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Duplicates Intercepted</div>
+        <div class="stat-val" style="color: #fbbf24;">1,894</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Pipeline Latency</div>
+        <div class="stat-val" style="color: #4ade80;">18ms</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Cluster Accuracy</div>
+        <div class="stat-val">99.4%</div>
+      </div>
+    </div>
+
+    <!-- 6. Callout Banner Box -->
+    <h2 class="section-title">6. Callout Banner Box</h2>
+    <p class="section-subtitle">Distinctive cream callout block with offset black star icon.</p>
+
+    <div class="callout-wrapper" style="max-width: 100%; margin-top: 30px;">
+      <div class="callout-star-badge">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+        </svg>
+      </div>
+      <div class="callout-banner">
+        <div class="callout-text">
+          Ready to deploy this UI in your next project? Copy the <code>ui-kit/assets/</code> and link <code>ui-style.css</code> to get started in seconds.
+        </div>
+        <a href="README.md" target="_blank" class="btn btn-dark">
+          Read Guide &rarr;
+        </a>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

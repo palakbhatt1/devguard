@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI DevGuard — Your AI-Powered DevSecOps Guardian</title>
+  <meta name="description" content="Automated Secret Scanner, AST-guided Error Explainer, CI/CD Failure Analyzer, and Codebase RAG Assistant.">
+  
+  <!-- DejaQ Typography: Plus Jakarta Sans & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/css/ui-style.css">
+  <style>
+    html, body {
+      width: 100vw;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-color: #050a14;
+    }
+
+    /* Atmospheric Background Layers */
+    .bg-sky {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: url('/static/assets/hero_bg_full.jpg') center right / cover no-repeat;
+      opacity: 0.35;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .bg-vignette {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: 
+        radial-gradient(circle at 78% 45%, transparent 20%, rgba(5, 10, 20, 0.7) 60%, rgba(5, 10, 20, 0.98) 90%),
+        linear-gradient(90deg, rgba(5, 10, 20, 1) 0%, rgba(5, 10, 20, 0.97) 38%, rgba(5, 10, 20, 0.8) 55%, rgba(5, 10, 20, 0.35) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .bg-halftone-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 14px 14px;
+      mix-blend-mode: overlay;
+      opacity: 0.28;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .page-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(16px, 2.5vh, 28px) clamp(24px, 4vw, 56px);
+      box-sizing: border-box;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Navbar */
+    header.site-header {
+      height: 64px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Hero main stage */
+    .hero-main {
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr;
+      gap: clamp(24px, 3.5vw, 48px);
+      align-items: center;
+      flex: 1;
+      margin: 16px 0 32px 0;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 540px;
+      z-index: 5;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+
+    .hero-title {
+      font-size: clamp(36px, 4.4vw, 56px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      color: #ffffff;
+      margin-bottom: 18px;
+      text-shadow: 0 2px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .hero-title-highlight {
+      color: var(--cream);
+      text-shadow: 0 0 25px rgba(240, 236, 225, 0.45);
+    }
+
+    .hero-subtitle {
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: #e2e8f0;
+      margin-bottom: 24px;
+      max-width: 500px;
+      font-weight: 400;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 3px 12px rgba(5, 10, 20, 0.95);
+    }
+
+    .hero-buttons {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ----------------- RADAR CONTAINER & ORBITAL CIRCLE ----------------- */
+    .hero-right-radar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      height: 100%;
+      min-height: clamp(380px, 48vh, 500px);
+    }
+
+    .radar-container {
+      position: relative;
+      width: clamp(340px, 46vh, 460px);
+      height: clamp(340px, 46vh, 460px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Central Ambient Glow */
+    .radar-glow-bg {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.45) 0%, rgba(14, 165, 233, 0.18) 40%, transparent 72%);
+      filter: blur(40px);
+      pointer-events: none;
+      animation: pulseGlow 4s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0% { transform: scale(0.95); opacity: 0.75; }
+      100% { transform: scale(1.08); opacity: 1; }
+    }
+
+    /* Outer Radar Orbit Line */
+    .orbit-ring-outer {
+      position: absolute;
+      width: 96%;
+      height: 96%;
+      border-radius: 50%;
+      border: 1px dashed rgba(56, 189, 248, 0.28);
+      animation: rotateOrbit 60s linear infinite;
+    }
+
+    @keyframes rotateOrbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Middle Radar Orbit Line */
+    .orbit-ring-middle {
+      position: absolute;
+      width: 78%;
+      height: 78%;
+      border-radius: 50%;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      box-shadow: 0 0 30px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Vivid Neon Portal Glow Ring */
+    .orbit-ring-portal {
+      position: absolute;
+      width: clamp(180px, 25vh, 245px);
+      height: clamp(180px, 25vh, 245px);
+      border-radius: 50%;
+      border: 2.5px solid #38bdf8;
+      box-shadow: 
+        0 0 35px #0284c7, 
+        0 0 65px rgba(37, 99, 235, 0.7), 
+        inset 0 0 25px rgba(56, 189, 248, 0.45);
+      pointer-events: none;
+      z-index: 4;
+      animation: pulsePortal 3s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulsePortal {
+      0% { transform: scale(0.98); box-shadow: 0 0 30px #0284c7, 0 0 50px rgba(37, 99, 235, 0.6); }
+      100% { transform: scale(1.02); box-shadow: 0 0 45px #38bdf8, 0 0 85px rgba(37, 99, 235, 0.9); }
+    }
+
+    /* Central Glowing Core */
+    .core-orb {
+      position: relative;
+      width: clamp(105px, 15vh, 142px);
+      height: clamp(105px, 15vh, 142px);
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, #3b82f6 0%, #1d4ed8 50%, #0c1a3b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 50px rgba(37, 99, 235, 0.85),
+        0 0 90px rgba(56, 189, 248, 0.45),
+        inset 0 0 25px rgba(147, 197, 253, 0.8);
+      border: 2px solid rgba(147, 197, 253, 0.5);
+      z-index: 5;
+      cursor: default;
+      user-select: none;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .core-orb:hover {
+      transform: scale(1.03);
+    }
+
+    .core-shield-icon {
+      width: clamp(50px, 7.5vh, 68px);
+      height: clamp(50px, 7.5vh, 68px);
+      filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.95));
+    }
+
+    /* Satellite Orbital Feature Badges */
+    .satellite-node {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: #ffffff;
+      z-index: 8;
+      cursor: default;
+      user-select: none;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .satellite-node:hover {
+      transform: scale(1.03);
+    }
+
+    .satellite-icon-circle {
+      width: clamp(40px, 5.4vh, 48px);
+      height: clamp(40px, 5.4vh, 48px);
+      border-radius: 50%;
+      background: radial-gradient(circle, #1d4ed8 0%, #081432 100%);
+      border: 1.5px solid rgba(56, 189, 248, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 22px rgba(56, 189, 248, 0.65);
+      flex-shrink: 0;
+      color: #ffffff;
+      transition: box-shadow 0.25s ease;
+    }
+
+    .satellite-node:hover .satellite-icon-circle {
+      box-shadow: 0 0 32px rgba(56, 189, 248, 0.95), 0 0 14px #ffffff;
+    }
+
+    .satellite-label {
+      font-size: clamp(0.78rem, 0.9vw, 0.88rem);
+      font-weight: 700;
+      color: #ffffff;
+      background: rgba(9, 20, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      backdrop-filter: blur(16px);
+      white-space: nowrap;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      font-family: var(--font-mono);
+    }
+
+    /* Node Positions */
+    .node-top {
+      top: 1%;
+      left: 50%;
+      transform: translate(-35%, 0);
+    }
+    .node-top:hover {
+      transform: translate(-35%, 0) scale(1.08);
+    }
+
+    .node-left {
+      left: -6%;
+      top: 50%;
+      transform: translate(0, -50%);
+    }
+    .node-left:hover {
+      transform: translate(0, -50%) scale(1.08);
+    }
+
+    .node-right {
+      right: -6%;
+      top: 50%;
+      transform: translate(0, -50%);
+    }
+    .node-right:hover {
+      transform: translate(0, -50%) scale(1.08);
+    }
+
+    .node-bottom {
+      bottom: 1%;
+      left: 50%;
+      transform: translate(-35%, 0);
+    }
+    .node-bottom:hover {
+      transform: translate(-35%, 0) scale(1.08);
+    }
+
+    /* Bottom 4 Feature Cards */
+    .features-section {
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .feature-card {
+      background: rgba(9, 20, 42, 0.65);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 20px 20px 18px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    }
+
+    .feature-card:hover {
+      background: rgba(18, 35, 68, 0.75);
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.15);
+    }
+
+    .feature-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      color: #38bdf8;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .feature-card:hover .feature-icon-box {
+      transform: scale(1.08);
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+    }
+
+    .feature-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .feature-card-desc {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      flex-grow: 1;
+    }
+
+    .feature-card-action {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: #38bdf8;
+      transition: gap 0.2s ease;
+    }
+
+    .feature-card:hover .feature-card-action {
+      gap: 10px;
+      color: var(--cream);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: linear-gradient(135deg, rgba(14, 28, 56, 0.95) 0%, rgba(9, 20, 42, 0.95) 100%);
+      border: 1px solid var(--border-glass-bright);
+      border-radius: 20px;
+      width: min(92vw, 560px);
+      padding: 30px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.15);
+      position: relative;
+      color: #f8fafc;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: #ffffff;
+    }
+
+    @media (max-width: 980px) {
+      .hero-main {
+        grid-template-columns: 1fr;
+      }
+      .hero-right-radar {
+        margin-top: 20px;
+      }
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 1. Photographic Sky Background -->
+  <div class="bg-sky"></div>
+  
+  <!-- 2. Dark Scrim Vignette for 100% Crisp Contrast -->
+  <div class="bg-vignette"></div>
+
+  <!-- 3. Halftone Dot Texture Overlay -->
+  <div class="bg-halftone-overlay"></div>
+
+  <!-- 4. Foreground Page Shell -->
+  <div class="page-shell">
+    
+    <!-- Top Header / Navigation -->
+    <header class="site-header">
+      <a href="/" class="brand">
+        <!-- 4-point sparkle star -->
+        <svg class="brand-star" viewBox="0 0 24 24">
+          <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+        </svg>
+        <span>AI DevGuard</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features" onclick="highlightFeatures(event)">Features</a></li>
+        <li><a href="#how-it-works" onclick="openModal('modal-how')">How It Works</a></li>
+        <li><a href="/docs" target="_blank">API Docs</a></li>
+        <li><a href="/dashboard/evaluation">Evaluation</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="btn btn-glass btn-sm" onclick="openModal('modal-login')">Access Info</button>
+        <a href="/dashboard" class="btn btn-cream btn-sm" id="btn-open-dashboard-nav">
+          Launch Dashboard &rarr;
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Hero Center Stage -->
+    <main class="hero-main">
+      
+      <!-- Left Column: Copy & Actions -->
+      <div class="hero-copy">
+        <div class="hero-eyebrow">YOUR AI-POWERED DEVSECOPS GUARDIAN</div>
+        <h1 class="hero-title">
+          Ship code.<br>
+          Catch failures.<br>
+          <span class="hero-title-highlight">Stay secure.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Detect secrets before commit, diagnose Python errors with AST navigation, analyze CI/CD failures, and explore codebases with contextual AI.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="/dashboard" class="btn btn-cream" id="btn-hero-open-dashboard">
+            Open Dashboard &rarr;
+          </a>
+          <a href="https://github.com/shivin4/DevGuard" target="_blank" rel="noopener noreferrer" class="btn btn-glass" id="btn-hero-github">
+            GitHub Repository <span class="play-circle">&nearr;</span>
+          </a>
+        </div>
+
+        <!-- Bottom Callout Banner Box with Offset Star Badge -->
+        <div class="callout-wrapper" style="margin-top: 28px; max-width: 500px;">
+          <div class="callout-star-badge">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+            </svg>
+          </div>
+          <div class="callout-banner">
+            <div class="callout-text">
+              Safeguard your deployment lifecycle: AI DevGuard detects leaks, traces stack frames with AST, and triages CI breaks before production.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Original Orbital Radar Circle with 4 Satellites -->
+      <div class="hero-right-radar">
+        <div class="radar-container">
+          <!-- Ambient Glow -->
+          <div class="radar-glow-bg"></div>
+
+          <!-- Orbit Rings -->
+          <div class="orbit-ring-outer"></div>
+          <div class="orbit-ring-middle"></div>
+          <div class="orbit-ring-portal"></div>
+
+          <!-- Satellite Node: TOP (Secret Detection) -->
+          <div class="satellite-node node-top">
+            <div class="satellite-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <span class="satellite-label">Secret Detection</span>
+          </div>
+
+          <!-- Satellite Node: LEFT (Error Diagnosis) -->
+          <div class="satellite-node node-left">
+            <div class="satellite-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+                <line x1="14" y1="4" x2="10" y2="20"></line>
+              </svg>
+            </div>
+            <span class="satellite-label">Error Diagnosis</span>
+          </div>
+
+          <!-- Satellite Node: RIGHT (CI Failure Analysis) -->
+          <div class="satellite-node node-right">
+            <div class="satellite-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <span class="satellite-label">CI Failure Analysis</span>
+          </div>
+
+          <!-- Satellite Node: BOTTOM (Codebase RAG) -->
+          <div class="satellite-node node-bottom">
+            <div class="satellite-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <circle cx="11.5" cy="14.5" r="2.5"></circle>
+                <line x1="13.5" y1="16.5" x2="16.5" y2="19.5"></line>
+              </svg>
+            </div>
+            <span class="satellite-label">Codebase RAG</span>
+          </div>
+
+          <!-- Central Core Orb (Shield Emblem with Star) -->
+          <div class="core-orb">
+            <svg class="core-shield-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 3L6 9V19C6 28 12 34.5 20 37C28 34.5 34 28 34 19V9L20 3Z" fill="url(#core_shield_grad)" stroke="#93c5fd" stroke-width="1.8" />
+              <!-- DejaQ 4-point sparkle star -->
+              <path d="M20 12C20 15.5 22.5 18 26 18C22.5 18 20 20.5 20 24C20 20.5 17.5 18 14 18C17.5 18 20 15.5 20 12Z" fill="#ffffff" filter="drop-shadow(0 0 6px #ffffff)" />
+              <defs>
+                <linearGradient id="core_shield_grad" x1="6" y1="3" x2="34" y2="37" gradientUnits="userSpaceOn">
+                  <stop offset="0%" stop-color="#60a5fa" />
+                  <stop offset="100%" stop-color="#2563eb" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Row: Exactly 4 Feature Cards -->
+    <section class="features-section" id="features">
+      <div class="features-grid">
+        <!-- Card 1: Secret Detection -->
+        <a href="/dashboard" class="feature-card" id="card-secret-detection">
+          <div>
+            <div class="feature-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <div class="feature-card-title">Secret Detection</div>
+            <div class="feature-card-desc">Detect API keys, JWTs, and private credentials before they reach Git with safe masking.</div>
+          </div>
+          <div class="feature-card-action">
+            <span>Open Scanner</span> &rarr;
+          </div>
+        </a>
+
+        <!-- Card 2: Error Diagnosis -->
+        <a href="/dashboard/errors" class="feature-card" id="card-error-diagnosis">
+          <div>
+            <div class="feature-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+                <line x1="14" y1="4" x2="10" y2="20"></line>
+              </svg>
+            </div>
+            <div class="feature-card-title">Error Diagnosis</div>
+            <div class="feature-card-desc">Understand Python stack traces with AST semantic code navigation and root-cause AI triage.</div>
+          </div>
+          <div class="feature-card-action">
+            <span>Open Explainer</span> &rarr;
+          </div>
+        </a>
+
+        <!-- Card 3: CI Failure Analysis -->
+        <a href="/dashboard/ci" class="feature-card" id="card-ci-analysis">
+          <div>
+            <div class="feature-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <div class="feature-card-title">CI Failure Analysis</div>
+            <div class="feature-card-desc">Clean ANSI build logs, classify breakages across 6 failure categories, and get PR fixes.</div>
+          </div>
+          <div class="feature-card-action">
+            <span>Open CI Triage</span> &rarr;
+          </div>
+        </a>
+
+        <!-- Card 4: Codebase RAG -->
+        <a href="/dashboard/rag" class="feature-card" id="card-codebase-rag">
+          <div>
+            <div class="feature-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <circle cx="11.5" cy="14.5" r="2.5"></circle>
+                <line x1="13.5" y1="16.5" x2="16.5" y2="19.5"></line>
+              </svg>
+            </div>
+            <div class="feature-card-title">Codebase RAG</div>
+            <div class="feature-card-desc">Ask questions about your repositories, configurations, and documentation with keyword RAG.</div>
+          </div>
+          <div class="feature-card-action">
+            <span>Open Assistant</span> &rarr;
+          </div>
+        </a>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Modal: How It Works -->
+  <div id="modal-how" class="modal-overlay" onclick="closeModalOnBackdrop(event, 'modal-how')">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('modal-how')">&times;</button>
+      <h3 style="font-family: var(--font-body); font-size: 20px; font-weight: 800; color: var(--cream); margin-bottom: 16px;">
+        How AI DevGuard Works
+      </h3>
+      <div style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6; display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <strong style="color: #38bdf8;">1. Deterministic Rule &amp; Shannon Entropy Scanner:</strong>
+          <p style="color: var(--text-muted); font-size: 12.5px; margin-top: 3px;">Runs high-precision regex pattern matching combined with Shannon entropy calculation. Sensitive keys are safely masked (<code>AKIA****CDEF</code>) before any LLM triage.</p>
+        </div>
+        <div>
+          <strong style="color: #38bdf8;">2. AST Semantic Code Navigation:</strong>
+          <p style="color: var(--text-muted); font-size: 12.5px; margin-top: 3px;">Parses Python stack traces and walks the Abstract Syntax Tree to identify enclosing functions, classes, and cross-file imported symbols.</p>
+        </div>
+        <div>
+          <strong style="color: #38bdf8;">3. Temperature-0 Structured Reasoning:</strong>
+          <p style="color: var(--text-muted); font-size: 12.5px; margin-top: 3px;">Feeds cleaned context into Google Gemini, OpenAI, Ollama, or deterministic offline mock client for structured JSON diagnosis.</p>
+        </div>
+      </div>
+      <div style="margin-top: 24px; text-align: right;">
+        <a href="/dashboard" class="btn btn-cream btn-sm" style="display: inline-flex;">Launch Dashboard &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Log In / Access Info -->
+  <div id="modal-login" class="modal-overlay" onclick="closeModalOnBackdrop(event, 'modal-login')">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('modal-login')">&times;</button>
+      <h3 style="font-family: var(--font-body); font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">
+        DevGuard System Access
+      </h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">
+        Local developer environment is active in development mode.
+      </p>
+      <div style="background: rgba(4, 10, 24, 0.7); border: 1px solid var(--border-glass); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="font-size: 12px; color: #38bdf8; margin-bottom: 6px; font-family: var(--font-mono);">STATUS: <span style="color: #4ade80;">ACTIVE DEV SESSION</span></div>
+        <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">ENV: development</div>
+        <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">DATABASE: SQLite (devguard.db)</div>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-glass btn-sm" onclick="closeModal('modal-login')">Close</button>
+        <a href="/dashboard" class="btn btn-cream btn-sm">Enter Dashboard &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    function closeModalOnBackdrop(event, modalId) {
+      if (event.target === document.getElementById(modalId)) {
+        closeModal(modalId);
+      }
+    }
+
+    function highlightFeatures(event) {
+      event.preventDefault();
+      const el = document.getElementById('features');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  </script>
+</body>
+</html>

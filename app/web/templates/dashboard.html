@@ -1,138 +1,663 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-label">Real Secrets Detected</div>
-        <div class="stat-value" style="color: var(--accent-red)">{{ real_secrets_count }}</div>
+<style>
+    /* Stat Cards Grid */
+    .dashboard-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+        width: 100%;
+    }
+
+    @media (max-width: 1180px) {
+        .dashboard-stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
+        .dashboard-stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .stat-card-link {
+        background: rgba(14, 28, 56, 0.6);
+        border: 1px solid var(--border-glass);
+        border-radius: 16px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+        min-width: 0;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        position: relative;
+    }
+
+    .stat-card-link::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    }
+
+    .stat-card-link:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15);
+    }
+
+    .stat-icon-square {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border-glass);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #38bdf8;
+        flex-shrink: 0;
+        transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .stat-card-link:hover .stat-icon-square {
+        transform: scale(1.06);
+        background: rgba(56, 189, 248, 0.14);
+        border-color: #38bdf8;
+    }
+
+    .stat-info-center {
+        flex: 1;
+        margin-left: 1rem;
+        min-width: 0;
+    }
+
+    .stat-lbl {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-muted);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .stat-val {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1;
+    }
+
+    .stat-arrow-circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border-glass);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .stat-card-link:hover .stat-arrow-circle {
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(2px);
+    }
+
+    /* Input Form Elements */
+    .scan-input {
+        background: rgba(4, 10, 24, 0.75);
+        border: 1px solid var(--border-glass);
+        color: #ffffff;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-family: var(--font-body);
+        min-width: 170px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .scan-input:focus {
+        outline: none;
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+    }
+
+    .tool-shortcut-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.25rem;
+        margin-top: 2rem;
+        width: 100%;
+    }
+
+    @media (max-width: 900px) {
+        .tool-shortcut-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .tool-shortcut-card {
+        background: rgba(9, 20, 42, 0.65);
+        border: 1px solid var(--border-glass);
+        border-radius: 16px;
+        padding: 1.35rem;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+    }
+
+    .tool-shortcut-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    }
+
+    .tool-shortcut-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15);
+    }
+
+    .tool-shortcut-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 0.4rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tool-shortcut-desc {
+        font-size: 0.84rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+        margin-bottom: 1.15rem;
+    }
+
+    .tool-shortcut-link {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: #38bdf8;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: gap 0.2s ease, color 0.2s ease;
+    }
+
+    .tool-shortcut-card:hover .tool-shortcut-link {
+        gap: 0.65rem;
+        color: var(--cream);
+    }
+
+    .empty-state-box {
+        text-align: center;
+        padding: 3rem 1.5rem;
+    }
+
+    .empty-state-icon {
+        width: 44px;
+        height: 44px;
+        margin-bottom: 0.75rem;
+        color: var(--text-dim);
+    }
+
+    .empty-state-text {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 0.25rem;
+    }
+
+    .empty-state-sub {
+        font-size: 0.84rem;
+        color: var(--text-muted);
+    }
+</style>
+
+<!-- 1. Row 1: Executive KPI Stat Cards -->
+<section class="dashboard-stats-grid">
+    <!-- Card 1: Real Secrets Detected -->
+    <a href="#secrets" class="stat-card-link">
+        <div class="stat-icon-square">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+        <div class="stat-info-center">
+            <div class="stat-lbl">Real Secrets Detected</div>
+            <div class="stat-val" style="color: #ef4444;">{{ real_secrets_count }}</div>
+        </div>
+        <div class="stat-arrow-circle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </div>
+    </a>
+
+    <!-- Card 2: False Positives Marked -->
+    <a href="#secrets" class="stat-card-link">
+        <div class="stat-icon-square">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+        </div>
+        <div class="stat-info-center">
+            <div class="stat-lbl">False Positives</div>
+            <div class="stat-val" style="color: #fbbf24;">{{ false_positives_count }}</div>
+        </div>
+        <div class="stat-arrow-circle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </div>
+    </a>
+
+    <!-- Card 3: Errors Diagnosed -->
+    <a href="/dashboard/errors" class="stat-card-link">
+        <div class="stat-icon-square">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+                <line x1="14" y1="4" x2="10" y2="20"></line>
+            </svg>
+        </div>
+        <div class="stat-info-center">
+            <div class="stat-lbl">Errors Diagnosed</div>
+            <div class="stat-val">{{ error_count }}</div>
+        </div>
+        <div class="stat-arrow-circle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </div>
+    </a>
+
+    <!-- Card 4: CI Analyses Run -->
+    <a href="/dashboard/ci" class="stat-card-link">
+        <div class="stat-icon-square">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+        </div>
+        <div class="stat-info-center">
+            <div class="stat-lbl">CI Analyses Run</div>
+            <div class="stat-val" style="color: #60a5fa;">{{ ci_analyses|length }}</div>
+        </div>
+        <div class="stat-arrow-circle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </div>
+    </a>
+</section>
+
+<!-- Charts Section -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% if by_rule or by_cat %}
+<style>
+    .dashboard-charts-grid {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr;
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+        width: 100%;
+    }
+    @media (max-width: 960px) {
+        .dashboard-charts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .chart-card-cosmic {
+        background: rgba(9, 20, 42, 0.68);
+        border: 1px solid var(--border-glass);
+        border-radius: 16px;
+        padding: 1.15rem 1.35rem;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+    }
+    .chart-card-cosmic::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    }
+    .chart-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.65rem;
+    }
+    .chart-card-title {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #38bdf8;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+<div class="dashboard-charts-grid">
+    <!-- Left Chart: Secrets by Rule Type (Horizontal Bar Chart) -->
+    <div class="chart-card-cosmic">
+        <div class="chart-card-header">
+            <div class="chart-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                <span>Secrets by Rule Type</span>
+            </div>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">{{ real_secrets_count }} Real / {{ findings|length }} Total</span>
+        </div>
+        <div style="position: relative; height: 160px; width: 100%;">
+            <canvas id="byRuleChart"></canvas>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">False Positives</div>
-        <div class="stat-value" style="color: var(--accent-amber)">{{ false_positives_count }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Errors Diagnosed</div>
-        <div class="stat-value" style="color: var(--primary)">{{ error_count }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">CI Analyses Run</div>
-        <div class="stat-value" style="color: var(--accent-green)">{{ ci_count }}</div>
+
+    <!-- Right Chart: CI Failures by Category (Slender Cosmic Doughnut) -->
+    <div class="chart-card-cosmic">
+        <div class="chart-card-header">
+            <div class="chart-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 2a10 10 0 0 1 10 10"></path>
+                </svg>
+                <span>CI Failures by Category</span>
+            </div>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">{{ ci_analyses|length }} Analyses</span>
+        </div>
+        <div style="position: relative; height: 160px; width: 100%; display: flex; align-items: center; justify-content: center;">
+            <canvas id="byCatChart"></canvas>
+        </div>
     </div>
 </div>
+<script>
+(function() {
+    {% if by_rule %}
+    const ruleCanvas = document.getElementById('byRuleChart');
+    if (ruleCanvas) {
+        new Chart(ruleCanvas, { 
+            type: 'bar', 
+            data: { 
+                labels: {{ by_rule|map(attribute=0)|list|tojson }}, 
+                datasets: [{ 
+                    label: 'Findings', 
+                    data: {{ by_rule|map(attribute=1)|list|tojson }}, 
+                    backgroundColor: 'rgba(56, 189, 248, 0.22)',
+                    borderColor: '#38bdf8',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barThickness: 16
+                }] 
+            }, 
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(5, 10, 20, 0.95)',
+                        titleColor: '#f2eee3',
+                        bodyColor: '#38bdf8',
+                        borderColor: 'rgba(56, 189, 248, 0.3)',
+                        borderWidth: 1,
+                        padding: 8,
+                        bodyFont: { family: 'Space Grotesk' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#8fa0b8',
+                            font: { size: 10, family: 'Space Grotesk' },
+                            stepSize: 1
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        beginAtZero: true
+                    },
+                    y: {
+                        ticks: {
+                            color: '#cbd5e1',
+                            font: { size: 10.5, family: 'Space Grotesk' }
+                        },
+                        grid: { display: false }
+                    }
+                }
+            } 
+        });
+    }
+    {% endif %}
 
-<!-- Secret Scanner Card -->
-<div class="card">
+    {% if by_cat %}
+    const catCanvas = document.getElementById('byCatChart');
+    if (catCanvas) {
+        const rawLabels = {{ by_cat|map(attribute=0)|list|tojson }};
+        const formattedLabels = rawLabels.map(l => 
+            l.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        );
+        const cosmicPalette = [
+            '#f2eee3', // Solid Cream
+            '#38bdf8', // Cosmic Cyan
+            '#f59e0b', // Warm Amber
+            '#3b82f6', // Electric Blue
+            '#818cf8', // Soft Indigo
+            '#f87171'  // Coral
+        ];
+        new Chart(catCanvas, { 
+            type: 'doughnut', 
+            data: { 
+                labels: formattedLabels, 
+                datasets: [{ 
+                    data: {{ by_cat|map(attribute=1)|list|tojson }}, 
+                    backgroundColor: cosmicPalette.slice(0, rawLabels.length),
+                    borderColor: '#09142a',
+                    borderWidth: 2.5,
+                    hoverOffset: 3
+                }] 
+            }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: { 
+                    legend: { 
+                        position: 'right',
+                        labels: { 
+                            color: '#cbd5e1', 
+                            font: { size: 10, family: 'Space Grotesk' }, 
+                            boxWidth: 8, 
+                            boxHeight: 8,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 8
+                        } 
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(5, 10, 20, 0.95)',
+                        titleColor: '#f2eee3',
+                        bodyColor: '#f2eee3',
+                        borderColor: 'rgba(255, 255, 255, 0.15)',
+                        borderWidth: 1,
+                        padding: 8,
+                        bodyFont: { family: 'Space Grotesk' }
+                    }
+                } 
+            } 
+        });
+    }
+    {% endif %}
+})();
+</script>
+{% endif %}
+
+<!-- 2. Row 2: Full-Width Secret Scanner Findings -->
+<section class="card" id="secrets" style="width: 100%; margin-bottom: 2rem;">
     <div class="card-header">
         <div class="card-title">
-            <span>🔑</span> Secret Scanner Findings
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Secret Scanner Findings</span>
         </div>
+        <!-- HTMX Scan Form -->
+        <form hx-post="/dashboard/scan" hx-target="#findings-table-content" hx-indicator="#scan-loader" style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+            <input type="text" name="path" value="." class="scan-input" placeholder="Directory or file path..." title="Directory or file path">
+            <button type="submit" class="btn-action-pill" id="btn-scan-path">
+                <span>Scan Path</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+                <span id="scan-loader" class="htmx-indicator" style="font-size: 0.75rem; color: #0c1424;">Scanning...</span>
+            </button>
+        </form>
+    </div>
+
+    <div class="table-responsive-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rule Name</th>
+                    <th>File &amp; Line</th>
+                    <th>Masked Secret</th>
+                    <th>Entropy</th>
+                    <th>Classification</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="findings-table-content">
+                {% for finding in findings %}
+                    {% include "partials/finding_row.html" %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" style="padding: 0; border: none;">
+                            <div class="empty-state-box">
+                                <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <circle cx="11.5" cy="14.5" r="2.5"></circle>
+                                    <line x1="13.5" y1="16.5" x2="16.5" y2="19.5"></line>
+                                </svg>
+                                <div class="empty-state-text">No secret findings logged yet.</div>
+                                <div class="empty-state-sub">Click "Scan Path" above or run <span class="badge-code">devguard scan</span> in CLI.</div>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- 3. Dedicated Tools Navigation Cards -->
+<section class="tool-shortcut-grid">
+    <!-- Tool 1: Error Explainer -->
+    <a href="/dashboard/errors" class="tool-shortcut-card">
         <div>
-            <form hx-post="/dashboard/scan" hx-target="#findings-table-body" hx-indicator="#scan-loader" style="display: inline-flex; gap: 0.5rem;">
-                <input type="text" name="path" value="." style="background: #090d16; border: 1px solid var(--border-color); color: white; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem;" placeholder="Path to scan...">
-                <button type="submit" class="btn btn-sm">
-                    <span>Scan Path</span>
-                    <span id="scan-loader" class="htmx-indicator">⏳</span>
-                </button>
-            </form>
+            <div class="tool-shortcut-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                    <line x1="14" y1="4" x2="10" y2="20"></line>
+                </svg>
+                <span>Error Explainer &amp; AST</span>
+            </div>
+            <p class="tool-shortcut-desc">
+                Diagnose Python tracebacks with cross-file AST call graph resolution and structured temperature=0 AI remediation.
+            </p>
         </div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Rule Name</th>
-                <th>File & Line</th>
-                <th>Masked Secret</th>
-                <th>Entropy</th>
-                <th>Classification</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="findings-table-body">
-            {% for finding in findings %}
-                {% include "partials/finding_row.html" %}
-            {% else %}
-                <tr>
-                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                        No secret findings logged yet. Click "Scan Path" above or run <code>devguard scan</code> in CLI.
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- Error Explainer Card -->
-<div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <span>⚡</span> Interactive Error Explainer
+        <div class="tool-shortcut-link">
+            <span>Open Error Explainer</span>
+            <span>&rarr;</span>
         </div>
-    </div>
+    </a>
 
-    <form hx-post="/dashboard/explain" hx-target="#explain-result" hx-indicator="#explain-loader">
-        <textarea name="traceback_text" placeholder="Paste Python exception traceback here... (e.g., Traceback (most recent call last): File 'main.py', line 12... ZeroDivisionError: division by zero)"></textarea>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <button type="submit" class="btn">
-                <span>Diagnose Exception</span>
-                <span id="explain-loader" class="htmx-indicator">⏳ Analyzing...</span>
-            </button>
+    <!-- Tool 2: CI Failure Analyzer -->
+    <a href="/dashboard/ci" class="tool-shortcut-card">
+        <div>
+            <div class="tool-shortcut-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <span>CI Failure Analyzer</span>
+            </div>
+            <p class="tool-shortcut-desc">
+                Clean raw GitHub Actions logs, pre-classify failure categories, and generate formatted PR comment previews.
+            </p>
         </div>
-    </form>
-
-    <div id="explain-result" style="margin-top: 1.5rem;"></div>
-</div>
-
-<!-- RAG Codebase & Security Q&A Card -->
-<div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <span>🤖</span> Ask DevGuard AI (LlamaIndex / LangChain RAG)
+        <div class="tool-shortcut-link">
+            <span>Open CI Analyzer</span>
+            <span>&rarr;</span>
         </div>
-    </div>
+    </a>
 
-    <form hx-post="/api/rag/query-htmx" hx-target="#rag-result" hx-swap="innerHTML" hx-on::after-request="this.reset()" hx-indicator="#rag-loader">
-        <div style="display: flex; gap: 0.8rem;">
-            <input type="text" name="query" placeholder="Ask anything about the codebase (e.g. How does secret masking work? What handles CI logs?)" style="flex: 1; background: #090d16; border: 1px solid var(--border-color); color: white; padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.9rem;" required>
-            <button type="submit" class="btn">
-                <span>Ask RAG Bot</span>
-                <span id="rag-loader" class="htmx-indicator">⏳ Searching...</span>
-            </button>
+    <!-- Tool 3: RAG Assistant -->
+    <a href="/dashboard/rag" class="tool-shortcut-card">
+        <div>
+            <div class="tool-shortcut-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <circle cx="11.5" cy="14.5" r="2.5"></circle>
+                    <line x1="13.5" y1="16.5" x2="16.5" y2="19.5"></line>
+                </svg>
+                <span>RAG Code Assistant</span>
+            </div>
+            <p class="tool-shortcut-desc">
+                Search codebase architecture, configuration files, and documentation with keyword relevance scoring and transparency.
+            </p>
         </div>
-    </form>
-
-    <div id="rag-result"></div>
-</div>
-
-<!-- CI Failure Analyses Card -->
-<div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <span>⚙️</span> CI Workflow Failure Analyses
+        <div class="tool-shortcut-link">
+            <span>Open RAG Assistant</span>
+            <span>&rarr;</span>
         </div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Repository</th>
-                <th>Workflow / Job</th>
-                <th>Category</th>
-                <th>Root Cause Analysis</th>
-                <th>Suggested Fix</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for analysis in ci_analyses %}
-                {% include "partials/ci_analysis_row.html" %}
-            {% else %}
-                <tr>
-                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                        No GitHub Action pipeline failures logged yet. Webhook endpoint is listening at <code>/webhooks/github</code>.
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    </a>
+</section>
 {% endblock %}

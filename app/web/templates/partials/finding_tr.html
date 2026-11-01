@@ -1,0 +1,35 @@
+<tr id="finding-row-{{ finding.id }}"
+    hx-get="/dashboard/findings/{{ finding.id }}/trace"
+    hx-target="#trace-{{ finding.id }}"
+    hx-trigger="click"
+    hx-swap="innerHTML"
+    style="cursor:pointer;" title="Click to view pipeline trace">
+    <td style="font-weight: 600; padding: 0.75rem 1rem;">{{ finding.rule_name }}</td>
+    <td style="font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8; word-break: break-all; max-width: 180px; padding: 0.75rem 1rem;">
+        {{ finding.file_path }}:{{ finding.line_number }}
+    </td>
+    <td style="font-family: var(--font-mono); font-size: 0.82rem; white-space: nowrap; padding: 0.75rem 1rem;">
+        <code>{{ finding.masked_value }}</code>
+    </td>
+    <td style="padding: 0.75rem 1rem;">{{ "%.2f"|format(finding.entropy_score) }}</td>
+    <td style="padding: 0.75rem 1rem;">
+        {% if finding.is_false_positive %}
+            <span class="badge badge-warning">False Positive</span>
+        {% elif finding.is_real_secret %}
+            <span class="badge badge-danger">Real Secret</span>
+        {% else %}
+            <span class="badge badge-success">Decoy / Placeholder</span>
+        {% endif %}
+    </td>
+    <td style="padding: 0.75rem 1rem;">
+        <button
+            hx-post="/dashboard/findings/{{ finding.id }}/toggle-false-positive"
+            hx-target="#finding-row-{{ finding.id }}"
+            hx-swap="outerHTML"
+            onclick="event.stopPropagation()"
+            class="btn btn-sm {% if finding.is_false_positive %}btn-secondary{% else %}btn-danger{% endif %}">
+            {% if finding.is_false_positive %}Undo FP{% else %}Mark FP{% endif %}
+        </button>
+    </td>
+</tr>
+

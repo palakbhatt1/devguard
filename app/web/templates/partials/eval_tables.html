@@ -1,0 +1,235 @@
+<div id="eval-body">
+{% set st = status() %}
+<p class="eval-meta">Provider: {{ st.provider }} | Model: {{ st.model or 'n/a' }} | Dataset: synthetic</p>
+
+<!-- 1. Secrets Benchmark -->
+<div class="eval-section">
+    <h2>Secret Scanner Benchmark</h2>
+    <div class="table-responsive-wrapper">
+    <table class="eval-table">
+        <thead><tr>
+            <th>System</th><th>Precision %</th><th>Recall %</th><th>F1 Score %</th><th>False Alarm %</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th>
+        </tr></thead>
+        <tbody>
+        {% for row in secrets %}
+        <tr {% if 'Our System' in row['System'] or 'LLM' in row['System'] %}class="our-system"{% endif %}>
+            <td>{{ row['System'] }}</td>
+            <td>{{ row['Precision (%)'] }}</td>
+            <td>{{ row['Recall (%)'] }}</td>
+            <td>{{ row['F1 Score (%)'] }}</td>
+            <td>{{ row['False Alarm Rate (%)'] }}</td>
+            <td>{{ row['TP'] }}</td><td>{{ row['FP'] }}</td><td>{{ row['FN'] }}</td><td>{{ row['TN'] }}</td>
+        </tr>
+        {% else %}<tr><td colspan="9" style="color: var(--text-muted);">No results yet. Run the benchmark.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% if secrets %}
+    <div class="chart-box" style="max-width: 680px; margin-top: 1.25rem; background: rgba(9, 20, 42, 0.68); border: 1px solid var(--border-glass); border-radius: 16px; padding: 1.15rem 1.35rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+        <div style="font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #38bdf8; font-weight: 700; margin-bottom: 0.65rem;">
+            Secret Scanner Metrics
+        </div>
+        <div style="position: relative; height: 165px; width: 100%;">
+            <canvas id="secretsChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 2. CI Benchmark -->
+<div class="eval-section">
+    <h2>CI Failure Analyzer Benchmark</h2>
+    <div class="table-responsive-wrapper">
+    <table class="eval-table">
+        <thead><tr><th>System</th><th>Category Accuracy %</th><th>Avg Time (s)</th><th>Avg Tokens</th></tr></thead>
+        <tbody>
+        {% for row in ci %}
+        <tr {% if 'Our System' in row['System'] or 'LLM' in row['System'] %}class="our-system"{% endif %}>
+            <td>{{ row['System'] }}</td>
+            <td>{{ row['Category Accuracy (%)'] }}</td>
+            <td>{{ row['Avg Time (s)'] }}</td>
+            <td>{{ row['Avg Tokens'] }}</td>
+        </tr>
+        {% else %}<tr><td colspan="4" style="color: var(--text-muted);">No results yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% if ci %}
+    <div class="chart-box" style="max-width: 680px; margin-top: 1.25rem; background: rgba(9, 20, 42, 0.68); border: 1px solid var(--border-glass); border-radius: 16px; padding: 1.15rem 1.35rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+        <div style="font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #38bdf8; font-weight: 700; margin-bottom: 0.65rem;">
+            CI Category Accuracy
+        </div>
+        <div style="position: relative; height: 165px; width: 100%;">
+            <canvas id="ciChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 3. Errors Benchmark -->
+<div class="eval-section">
+    <h2>Error Explainer Benchmark</h2>
+    <div class="table-responsive-wrapper">
+    <table class="eval-table">
+        <thead><tr><th>System</th><th>Correct Cause Rate %</th><th>Valid JSON Rate %</th></tr></thead>
+        <tbody>
+        {% for row in errors %}
+        <tr {% if 'Our System' in row['System'] or 'Parsed' in row['System'] %}class="our-system"{% endif %}>
+            <td>{{ row['System'] }}</td>
+            <td>{{ row['Correct Cause Rate (%)'] }}</td>
+            <td>{{ row['Valid JSON Rate (%)'] }}</td>
+        </tr>
+        {% else %}<tr><td colspan="3" style="color: var(--text-muted);">No results yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% if errors %}
+    <div class="chart-box" style="max-width: 680px; margin-top: 1.25rem; background: rgba(9, 20, 42, 0.68); border: 1px solid var(--border-glass); border-radius: 16px; padding: 1.15rem 1.35rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+        <div style="font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #38bdf8; font-weight: 700; margin-bottom: 0.65rem;">
+            Error Diagnosis Accuracy
+        </div>
+        <div style="position: relative; height: 165px; width: 100%;">
+            <canvas id="errorsChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { 
+            legend: { 
+                labels: { color: '#cbd5e1', font: { size: 10.5, family: 'Space Grotesk' }, boxWidth: 10, padding: 10 } 
+            },
+            tooltip: {
+                backgroundColor: 'rgba(5, 10, 20, 0.95)',
+                titleColor: '#f2eee3',
+                bodyColor: '#38bdf8',
+                borderColor: 'rgba(255, 255, 255, 0.12)',
+                borderWidth: 1,
+                padding: 8,
+                bodyFont: { family: 'Space Grotesk' }
+            }
+        },
+        scales: {
+            x: { 
+                ticks: { color: '#8fa0b8', font: { size: 10, family: 'Space Grotesk' } }, 
+                grid: { color: 'rgba(255,255,255,0.04)' } 
+            },
+            y: { 
+                ticks: { color: '#8fa0b8', font: { size: 10, family: 'Space Grotesk' } }, 
+                grid: { color: 'rgba(255,255,255,0.04)' }, 
+                min: 0, 
+                max: 100 
+            }
+        }
+    };
+
+    {% if secrets %}
+    const secCanvas = document.getElementById('secretsChart');
+    if (secCanvas) {
+        new Chart(secCanvas, {
+            type: 'bar',
+            data: {
+                labels: {{ secrets | map(attribute='System') | list | tojson }},
+                datasets: [
+                    { 
+                        label: 'Precision %', 
+                        data: {{ secrets | map(attribute='Precision (%)') | map('float') | list | tojson }}, 
+                        backgroundColor: 'rgba(56, 189, 248, 0.22)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    },
+                    { 
+                        label: 'Recall %', 
+                        data: {{ secrets | map(attribute='Recall (%)') | map('float') | list | tojson }}, 
+                        backgroundColor: 'rgba(16, 185, 129, 0.22)',
+                        borderColor: '#10b981',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    },
+                    { 
+                        label: 'F1 Score %', 
+                        data: {{ secrets | map(attribute='F1 Score (%)') | map('float') | list | tojson }}, 
+                        backgroundColor: 'rgba(242, 238, 227, 0.28)',
+                        borderColor: '#f2eee3',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    },
+                ]
+            },
+            options: chartDefaults
+        });
+    }
+    {% endif %}
+
+    {% if ci %}
+    const ciCanvas = document.getElementById('ciChart');
+    if (ciCanvas) {
+        new Chart(ciCanvas, {
+            type: 'bar',
+            data: {
+                labels: {{ ci | map(attribute='System') | list | tojson }},
+                datasets: [{ 
+                    label: 'Category Accuracy %', 
+                    data: {{ ci | map(attribute='Category Accuracy (%)') | map('float') | list | tojson }}, 
+                    backgroundColor: [
+                        'rgba(56, 189, 248, 0.22)',
+                        'rgba(245, 158, 11, 0.22)',
+                        'rgba(242, 238, 227, 0.35)'
+                    ],
+                    borderColor: [
+                        '#38bdf8',
+                        '#f59e0b',
+                        '#f2eee3'
+                    ],
+                    borderWidth: 1.5,
+                    borderRadius: 4
+                }]
+            },
+            options: chartDefaults
+        });
+    }
+    {% endif %}
+
+    {% if errors %}
+    const errCanvas = document.getElementById('errorsChart');
+    if (errCanvas) {
+        new Chart(errCanvas, {
+            type: 'bar',
+            data: {
+                labels: {{ errors | map(attribute='System') | list | tojson }},
+                datasets: [
+                    { 
+                        label: 'Correct Cause %', 
+                        data: {{ errors | map(attribute='Correct Cause Rate (%)') | map('float') | list | tojson }}, 
+                        backgroundColor: 'rgba(56, 189, 248, 0.22)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    },
+                    { 
+                        label: 'Valid JSON %', 
+                        data: {{ errors | map(attribute='Valid JSON Rate (%)') | map('float') | list | tojson }}, 
+                        backgroundColor: 'rgba(129, 140, 248, 0.22)',
+                        borderColor: '#818cf8',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    },
+                ]
+            },
+            options: chartDefaults
+        });
+    }
+    {% endif %}
+})();
+</script>

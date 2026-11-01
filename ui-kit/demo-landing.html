@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UI Kit Showcase — DejaQ Theme Demo</title>
+  <meta name="description" content="Standalone UI template with 3D glassmorphism and starry sky aesthetic.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="ui-style.css">
+  <style>
+    /* Hero Center Stage & Page Shell */
+    html, body {
+      width: 100vw;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .page-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(16px, 3vh, 32px) clamp(24px, 4.5vw, 64px) clamp(16px, 2.8vh, 30px);
+    }
+
+    .hero-main {
+      display: grid;
+      grid-template-columns: 0.95fr 1.25fr;
+      gap: clamp(24px, 4vw, 52px);
+      align-items: center;
+      flex: 1;
+      margin: 20px 0;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 520px;
+    }
+
+    .hero-title {
+      font-size: clamp(38px, 4.4vw, 60px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      color: #ffffff;
+      margin-bottom: 22px;
+    }
+
+    .hero-subtitle {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.65);
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero-showcase {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      width: 100%;
+    }
+
+    @media (max-width: 980px) {
+      .hero-main {
+        grid-template-columns: 1fr;
+      }
+      .hero-showcase {
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 1. Photographic Sky Background -->
+  <div class="bg-sky"></div>
+  
+  <!-- 2. Halftone Dot Texture Overlay -->
+  <div class="bg-halftone-overlay"></div>
+
+  <!-- 3. Foreground Page Shell -->
+  <div class="page-shell">
+    
+    <!-- Top Header -->
+    <header class="site-header">
+      <a href="#" class="brand">
+        <!-- DejaQ 4-point sparkle star -->
+        <svg class="brand-star" viewBox="0 0 24 24">
+          <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+        </svg>
+        <span>YourBrand</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#components">Components</a></li>
+        <li><a href="components.html">UI Catalog</a></li>
+        <li><a href="README.md" target="_blank">Documentation</a></li>
+      </ul>
+
+      <a href="components.html" class="btn btn-cream">
+        Browse UI Kit &rarr;
+      </a>
+    </header>
+
+    <!-- Main Hero Center Stage -->
+    <main class="hero-main">
+      
+      <!-- Left Column: Copy & Actions -->
+      <div class="hero-copy">
+        <h1 class="hero-title">
+          Build Stunning<br>
+          Interfaces.<br>
+          With Cosmic Glass.
+        </h1>
+
+        <p class="hero-subtitle">
+          ULTRA-GLASS 3D PERSPECTIVE<br>
+          RETRO-FUTURISTIC STIPPLED DARK UI
+        </p>
+
+        <div class="hero-buttons">
+          <a href="components.html" class="btn btn-cream">
+            Explore Components &rarr;
+          </a>
+          <button class="btn btn-glass" onclick="simulateDemo()">
+            Watch Demo <span class="play-circle">&#9655;</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Column: 3D Showcase Glass Slab -->
+      <div class="hero-showcase">
+        <div class="showcase-container">
+          
+          <!-- The Signature 3D Perspective Glass Slab -->
+          <div class="showcase-3d-slab">
+            
+            <!-- Left Side: Interactive Search & Inspection -->
+            <div class="panel-detector">
+              <div class="specular-highlight"></div>
+
+              <!-- Search Bar -->
+              <div class="search-bar">
+                <svg class="search-icon" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input id="demo-input" type="text" class="search-input" value="Semantic search query..." placeholder="Type something...">
+                <button class="search-submit" onclick="simulateDemo()" title="Run action">&rarr;</button>
+              </div>
+
+              <!-- Card 1 -->
+              <div class="card-item">
+                <div class="card-item-header">
+                  <span class="card-item-label">
+                    <span class="icon-plus">+</span> Primary Query
+                  </span>
+                  <span id="badge-1" class="badge-pill badge-different">
+                    <span class="badge-check">&#10003;</span> Verified Unique
+                  </span>
+                </div>
+                <div id="text-1" class="card-item-text">What is the Doppler effect in wave physics?</div>
+              </div>
+
+              <!-- Card 2 -->
+              <div class="card-item">
+                <div class="card-item-header">
+                  <span class="card-item-label">
+                    <span class="icon-plus">+</span> Semantic Match
+                  </span>
+                  <span id="badge-2" class="badge-pill badge-semantic">
+                    <span class="badge-dot"></span> 94% Similarity
+                  </span>
+                </div>
+                <div class="card-item-sub">
+                  <span id="text-2" class="card-item-text">Explain frequency shift caused by observer motion.</span>
+                  <span class="card-item-score">Score: 0.94</span>
+                </div>
+              </div>
+
+              <!-- Card 3 -->
+              <div class="card-item">
+                <div class="card-item-header">
+                  <span class="card-item-label">
+                    <span class="icon-plus">+</span> Recommended Alternative
+                  </span>
+                  <span class="badge-pill badge-blue">
+                    <span class="badge-dot"></span> Suggested
+                  </span>
+                </div>
+                <div class="card-item-sub">
+                  <span class="card-item-text">How does redshift explain cosmic expansion?</span>
+                  <span class="card-item-score">Score: 0.81</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: Subtopic Coverage Progress Bars -->
+            <div class="panel-coverage">
+              <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 10px;">Topic Distribution</div>
+
+              <div class="cov-item">
+                <span class="cov-name">Core Theory</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 78%;"></div></div>
+                <span class="cov-val">78%</span>
+              </div>
+
+              <div class="cov-item">
+                <span class="cov-name">Mathematics</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 42%;"></div></div>
+                <span class="cov-val">42%</span>
+              </div>
+
+              <div class="cov-item">
+                <span class="cov-name">Application</span>
+                <div class="cov-track"><div class="cov-bar cov-bar-amber" style="width: 25%;"></div></div>
+                <span class="cov-val">25%</span>
+              </div>
+
+              <div class="cov-item">
+                <span class="cov-name">Synthesis</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 60%;"></div></div>
+                <span class="cov-val">60%</span>
+              </div>
+
+              <div class="cov-item">
+                <span class="cov-name">Advanced</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 35%;"></div></div>
+                <span class="cov-val">35%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Callout Banner Box with Offset Star Badge -->
+          <div class="callout-wrapper">
+            <div class="callout-star-badge">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+              </svg>
+            </div>
+            <div class="callout-banner">
+              <div class="callout-text">
+                This UI combines multi-layer stippled backdrops, ultra-glass cards, and 3D perspective transforms to create high-converting modern developer & SaaS products.
+              </div>
+              <a href="components.html" class="btn btn-dark">
+                View Components &rarr;
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    const samples = [
+      {
+        q: "What causes gravitational lensing?",
+        m: "How does mass curve spacetime and bend light?",
+        score: "0.91",
+        verdict: "Semantic Duplicate",
+        cls: "badge-semantic"
+      },
+      {
+        q: "Write a high-performance vector indexing algorithm in Rust.",
+        m: "No duplicate found in database.",
+        score: "0.18",
+        verdict: "Verified Unique",
+        cls: "badge-different"
+      }
+    ];
+
+    let current = 0;
+    function simulateDemo() {
+      current = (current + 1) % samples.length;
+      const s = samples[current];
+      document.getElementById('demo-input').value = s.q;
+      document.getElementById('text-1').textContent = s.q;
+      document.getElementById('text-2').textContent = s.m;
+      document.getElementById('badge-2').className = 'badge-pill ' + s.cls;
+      document.getElementById('badge-2').innerHTML = `<span class="badge-dot"></span> ${s.verdict}`;
+    }
+  </script>
+</body>
+</html>

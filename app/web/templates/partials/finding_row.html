@@ -1,32 +1,4 @@
-<tr id="finding-row-{{ finding.id }}">
-    <td style="font-weight: 600;">{{ finding.rule_name }}</td>
-    <td style="font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8;">
-        {{ finding.file_path }}:{{ finding.line_number }}
-    </td>
-    <td style="font-family: var(--font-mono); font-size: 0.85rem;">
-        <code>{{ finding.masked_value }}</code>
-    </td>
-    <td>{{ "%.2f"|format(finding.entropy_score) }}</td>
-    <td>
-        {% if finding.is_false_positive %}
-            <span class="badge badge-warning">False Positive</span>
-        {% elif finding.is_real_secret %}
-            <span class="badge badge-danger">Real Secret</span>
-        {% else %}
-            <span class="badge badge-success">Decoy / Placeholder</span>
-        {% endif %}
-    </td>
-    <td>
-        <button 
-            hx-post="/dashboard/findings/{{ finding.id }}/toggle-false-positive" 
-            hx-target="#finding-row-{{ finding.id }}" 
-            hx-swap="outerHTML"
-            class="btn btn-sm {% if finding.is_false_positive %}btn-secondary{% else %}btn-danger{% endif %}">
-            {% if finding.is_false_positive %}
-                Undo False Positive
-            {% else %}
-                Mark False Positive
-            {% endif %}
-        </button>
-    </td>
+{% include "partials/finding_tr.html" %}
+<tr id="trace-row-{{ finding.id }}">
+    <td colspan="6" id="trace-{{ finding.id }}" style="padding: 0; background: rgba(0,0,0,0.2);"></td>
 </tr>

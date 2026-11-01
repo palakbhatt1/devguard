@@ -1,27 +1,80 @@
-<div style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--primary); border-radius: 12px; padding: 1.25rem;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-        <span class="badge badge-danger" style="font-size: 0.85rem;">{{ explanation.exception_type }}</span>
-        <span style="font-size: 0.8rem; color: var(--text-muted);">Diagnosed by AI DevGuard</span>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+    <!-- Left: AST Context Panel -->
+    <div style="background: rgba(14, 28, 56, 0.65); border: 1px solid var(--border-glass); border-radius: 14px; padding: 1.35rem; backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+        <h4 style="color: #38bdf8; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+            AST Semantic Context
+            {% if sem_context %}
+            <span class="badge-pill badge-green" style="font-size: 10px;"><span class="badge-check">&#10003;</span> Active</span>
+            {% else %}
+            <span class="badge-pill badge-amber" style="font-size: 10px;">Not available</span>
+            {% endif %}
+        </h4>
+
+        {% if parsed %}
+        <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 0.85rem;">
+            File: {{ parsed.failing_file or 'unknown' }}{% if parsed.failing_line %} : line {{ parsed.failing_line }}{% endif %}
+        </div>
+        {% endif %}
+
+        {% if sem_context %}
+        <div style="margin-bottom: 0.85rem;">
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Enclosing Scope</div>
+            <code style="font-family: var(--font-mono); font-size: 13px; color: #c084fc;">
+                {% if sem_context.enclosing_class %}{{ sem_context.enclosing_class }}.{% endif %}{{ sem_context.enclosing_function or '<module>' }}
+            </code>
+        </div>
+        {% if sem_context.called_functions %}
+        <div style="margin-bottom: 0.85rem;">
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Calls Detected</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+            {% for fn in sem_context.called_functions %}
+                <code style="font-size: 11px; font-family: var(--font-mono); background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; padding: 0.15rem 0.45rem; border-radius: 6px;">{{ fn }}()</code>
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% if sem_context.resolved_cross_file_definitions %}
+        <div>
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Resolved Imports</div>
+            {% for cfd in sem_context.resolved_cross_file_definitions %}
+            <details style="margin-bottom: 0.45rem;">
+                <summary style="cursor: pointer; font-size: 12px; color: #a78bfa; font-family: var(--font-mono);">{{ cfd.name }}() &mdash; {{ cfd.file_path.split('/')[-1] if cfd.file_path else '' }} L{{ cfd.start_line }}</summary>
+                <pre style="font-size: 11.5px; font-family: var(--font-mono); background: rgba(4, 10, 24, 0.8); border: 1px solid var(--border-glass); padding: 0.65rem; border-radius: 8px; margin-top: 0.35rem; white-space: pre-wrap; color: #cbd5e1; max-height: 130px; overflow-y: auto;">{{ cfd.code_snippet }}</pre>
+            </details>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% else %}
+        <p style="color: var(--text-muted); font-size: 13px;">AST context is not available for this traceback (file not found on disk or no local source).</p>
+        {% endif %}
     </div>
 
-    <h4 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 0.5rem; color: #f8fafc;">
-        {{ explanation.summary }}
-    </h4>
+    <!-- Right: LLM Diagnosis -->
+    <div style="background: rgba(14, 28, 56, 0.65); border: 1px solid var(--border-glass); border-radius: 14px; padding: 1.35rem; backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <span class="badge badge-danger" style="font-family: var(--font-mono); font-size: 11px;">{{ explanation.exception_type }}</span>
+            <span style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">Diagnosed by AI DevGuard</span>
+        </div>
 
-    <div style="margin-bottom: 1rem;">
-        <h5 style="font-size: 0.85rem; color: var(--text-muted); uppercase; margin-bottom: 0.25rem;">Root Cause:</h5>
-        <p style="font-size: 0.9rem; line-height: 1.5; color: #cbd5e1;">{{ explanation.root_cause }}</p>
-    </div>
+        <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.65rem; color: #ffffff;">
+            {{ explanation.summary }}
+        </h4>
 
-    <div style="margin-bottom: 1rem;">
-        <h5 style="font-size: 0.85rem; color: var(--text-muted); uppercase; margin-bottom: 0.25rem;">Suggested Fix:</h5>
-        <p style="font-size: 0.9rem; line-height: 1.5; color: #6ee7b7;">{{ explanation.suggested_fix }}</p>
-    </div>
+        <div style="margin-bottom: 1rem;">
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Root Cause:</div>
+            <p style="font-size: 13px; line-height: 1.5; color: #cbd5e1;">{{ explanation.root_cause }}</p>
+        </div>
 
-    {% if explanation.fixed_code_snippet %}
-    <div>
-        <h5 style="font-size: 0.85rem; color: var(--text-muted); uppercase; margin-bottom: 0.25rem;">Code Fix:</h5>
-        <pre class="code-box"><code>{{ explanation.fixed_code_snippet }}</code></pre>
+        <div style="margin-bottom: 1rem;">
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Suggested Fix:</div>
+            <p style="font-size: 13px; line-height: 1.5; color: #4ade80;">{{ explanation.suggested_fix }}</p>
+        </div>
+
+        {% if explanation.fixed_code_snippet %}
+        <div>
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Code Fix:</div>
+            <pre style="background: rgba(4, 10, 24, 0.85); border: 1px solid var(--border-glass); padding: 0.75rem; border-radius: 8px; font-family: var(--font-mono); font-size: 12px; color: #f8fafc; overflow-x: auto;"><code>{{ explanation.fixed_code_snippet }}</code></pre>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
