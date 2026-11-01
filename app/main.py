@@ -41,6 +41,9 @@ app.include_router(explain_router)
 app.include_router(rag_router)
 app.include_router(webhooks_router)
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/web/static"), name="static")
+
 
 @app.get("/health")
 def health_check():

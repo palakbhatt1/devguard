@@ -33,9 +33,10 @@ async def test_rag_engine_indexing_and_query():
     chunks = rag.retrieve("secret masking", top_k=2)
     assert len(chunks) > 0
     assert "mask" in chunks[0].content.lower() or "secret" in chunks[0].content.lower()
+    assert hasattr(chunks[0], "matched_terms")
 
     # Query codebase
     res: RAGQueryResult = await rag.query_codebase("How are secrets masked?")
     assert res.query == "How are secrets masked?"
     assert len(res.sources) > 0
-    assert "LlamaIndex" in res.engine_used
+    assert "Keyword RAG" in res.engine_used

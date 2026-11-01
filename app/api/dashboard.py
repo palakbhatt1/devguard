@@ -1,11 +1,22 @@
+import asyncio as _asyncio
+import csv
+import os as _os
+import pathlib
+import subprocess
 from typing import Optional
-from fastapi import APIRouter, Depends, Form, Request, HTTPException
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import get_settings as _get_settings
 from app.database import get_db
+from app.engines.ci import CIFailureAnalyzer, classify_ci_failure_rules, clean_ci_log
 from app.engines.errors import ErrorExplainer
+from app.engines.errors.graph import ASTNavigator
+from app.engines.errors.parser import parse_python_traceback
 from app.engines.secrets import SecretScanner
 from app.llm import get_llm_client
 from app.models.domain import ErrorExplanation, Finding, WorkflowAnalysis
@@ -14,7 +25,37 @@ router = APIRouter(tags=["Web Dashboard"])
 templates = Jinja2Templates(directory="app/web/templates")
 
 
+def _status_info():
+    s = _get_settings()
+    provider = s.LLM_PROVIDER
+    model = s.LLM_MODEL or ""
+    db = "postgres" if "postgres" in s.DATABASE_URL else "sqlite"
+    return {"provider": provider, "model": model, "rag_backend": "keyword", "db": db}
+
+
+templates.env.globals["status"] = _status_info
+
+EVAL_DIR = pathlib.Path("eval")
+SAMPLES_DIR = pathlib.Path("app/web/samples")
+
+
+def _load_csv(name: str):
+    p = EVAL_DIR / name
+    if not p.exists():
+        return []
+    with open(p, "r", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
 @router.get("/", response_class=HTMLResponse)
+async def get_landing(request: Request):
+    """Render futuristic SaaS hero landing page."""
+    return templates.TemplateResponse(
+        request=request,
+        name="landing.html",
+    )
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard(request: Request, db: Session = Depends(get_db)):
     """Render main web dashboard overview."""
@@ -24,6 +65,15 @@ async def get_dashboard(request: Request, db: Session = Depends(get_db)):
 
     real_secrets_count = sum(1 for f in findings if f.is_real_secret and not f.is_false_positive)
     false_positives_count = sum(1 for f in findings if f.is_false_positive)
+
+    # Chart data
+    by_rule = db.query(Finding.rule_name, func.count(Finding.id)).group_by(Finding.rule_name).all()
+    by_cat = db.query(WorkflowAnalysis.failure_category, func.count(WorkflowAnalysis.id)).group_by(WorkflowAnalysis.failure_category).all()
+
+    # Recent events (last 10 across all engines)
+    recent_findings = db.query(Finding).order_by(Finding.id.desc()).limit(5).all()
+    recent_ci = db.query(WorkflowAnalysis).order_by(WorkflowAnalysis.id.desc()).limit(3).all()
+    recent_errors = db.query(ErrorExplanation).order_by(ErrorExplanation.id.desc()).limit(2).all()
 
     return templates.TemplateResponse(
         request=request,
@@ -35,6 +85,12 @@ async def get_dashboard(request: Request, db: Session = Depends(get_db)):
             "false_positives_count": false_positives_count,
             "error_count": error_count,
             "ci_count": len(ci_analyses),
+            "scan_count": db.query(Finding).count(),
+            "by_rule": by_rule,
+            "by_cat": by_cat,
+            "recent_findings": recent_findings,
+            "recent_ci": recent_ci,
+            "recent_errors": recent_errors,
         },
     )
 
@@ -54,21 +110,31 @@ async def dashboard_scan(
     except Exception as e:
         return HTMLResponse(f"<tr><td colspan='6' style='color: var(--accent-red);'>Scan Error: {e}</td></tr>")
 
-    new_findings = []
     for rf in raw_findings:
-        db_finding = Finding(
-            file_path=rf.file_path,
-            line_number=rf.line_number,
-            rule_name=rf.rule_name,
-            masked_value=rf.masked_value,
-            entropy_score=rf.entropy_score,
-            is_real_secret=rf.is_real_secret,
-            is_false_positive=False,
-            reasoning=rf.reasoning,
-        )
-        db.add(db_finding)
-        db.flush()
-        new_findings.append(db_finding)
+        existing = db.query(Finding).filter(
+            Finding.file_path == rf.file_path,
+            Finding.line_number == rf.line_number,
+            Finding.rule_name == rf.rule_name,
+        ).first()
+        if existing:
+            existing.masked_value = rf.masked_value
+            existing.entropy_score = rf.entropy_score
+            existing.is_real_secret = rf.is_real_secret
+            existing.reasoning = rf.reasoning
+            existing.context_snippet = rf.context_snippet
+        else:
+            db_finding = Finding(
+                file_path=rf.file_path,
+                line_number=rf.line_number,
+                rule_name=rf.rule_name,
+                masked_value=rf.masked_value,
+                entropy_score=rf.entropy_score,
+                is_real_secret=rf.is_real_secret,
+                is_false_positive=False,
+                reasoning=rf.reasoning,
+                context_snippet=rf.context_snippet,
+            )
+            db.add(db_finding)
 
     db.commit()
 
@@ -101,7 +167,20 @@ async def toggle_false_positive(
 
     return templates.TemplateResponse(
         request=request,
-        name="partials/finding_row.html",
+        name="partials/finding_tr.html",
+        context={"finding": finding},
+    )
+
+
+@router.get("/dashboard/findings/{finding_id}/trace", response_class=HTMLResponse)
+async def finding_trace(finding_id: int, request: Request, db: Session = Depends(get_db)):
+    """HTMX: return pipeline trace detail for a finding."""
+    finding = db.query(Finding).filter(Finding.id == finding_id).first()
+    if not finding:
+        return HTMLResponse("<td colspan='6'>Finding not found.</td>")
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/finding_trace.html",
         context={"finding": finding},
     )
 
@@ -110,6 +189,7 @@ async def toggle_false_positive(
 async def dashboard_explain_error(
     request: Request,
     traceback_text: str = Form(...),
+    use_ast: str = Form("true"),
     db: Session = Depends(get_db),
 ):
     """HTMX endpoint for diagnosing an error traceback in the UI."""
@@ -120,6 +200,18 @@ async def dashboard_explain_error(
 
     llm_client = get_llm_client()
     explainer = ErrorExplainer(llm_client=llm_client)
+
+    # Parse traceback for AST context
+    parsed = parse_python_traceback(traceback_text)
+    sem_context = None
+    if use_ast.lower() != "false" and parsed.failing_file and parsed.failing_line:
+        import os
+        if os.path.exists(parsed.failing_file):
+            try:
+                nav = ASTNavigator()
+                sem_context = nav.get_semantic_context(parsed.failing_file, parsed.failing_line)
+            except Exception:
+                pass
 
     try:
         res = await explainer.explain_error(traceback_text=traceback_text)
@@ -132,6 +224,8 @@ async def dashboard_explain_error(
         root_cause=res.root_cause,
         suggested_fix=res.suggested_fix,
         fixed_code_snippet=res.fixed_code_snippet,
+        file_path=parsed.failing_file,
+        line_number=parsed.failing_line,
     )
     db.add(db_obj)
     db.commit()
@@ -140,5 +234,135 @@ async def dashboard_explain_error(
     return templates.TemplateResponse(
         request=request,
         name="partials/error_result.html",
-        context={"explanation": db_obj},
+        context={"explanation": db_obj, "sem_context": sem_context, "parsed": parsed},
+    )
+
+
+@router.get("/dashboard/evaluation", response_class=HTMLResponse)
+async def evaluation_page(request: Request):
+    """Render evaluation benchmark results page."""
+    return templates.TemplateResponse(
+        request=request,
+        name="evaluation.html",
+        context={
+            "secrets": _load_csv("results_secrets.csv"),
+            "ci": _load_csv("results_ci.csv"),
+            "errors": _load_csv("results_errors.csv"),
+        },
+    )
+
+
+@router.post("/dashboard/evaluation/run", response_class=HTMLResponse)
+async def run_evaluation(request: Request):
+    """HTMX endpoint: re-run eval benchmark with mock provider and return updated table block."""
+    import os
+    env = {**os.environ, "LLM_PROVIDER": "mock"}
+    try:
+        await _asyncio.to_thread(
+            subprocess.run,
+            ["python", "eval/run_experiments.py"],
+            capture_output=True, text=True, timeout=120, env=env
+        )
+    except Exception:
+        pass
+    # Return refreshed partial
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/eval_tables.html",
+        context={
+            "secrets": _load_csv("results_secrets.csv"),
+            "ci": _load_csv("results_ci.csv"),
+            "errors": _load_csv("results_errors.csv"),
+        },
+    )
+
+
+@router.get("/dashboard/ci", response_class=HTMLResponse)
+async def ci_tab(request: Request, db: Session = Depends(get_db)):
+    """Render CI Failure Analyzer tab."""
+    samples = [f.stem for f in SAMPLES_DIR.glob("*.log")] if SAMPLES_DIR.exists() else []
+    ci_analyses = db.query(WorkflowAnalysis).order_by(WorkflowAnalysis.id.desc()).all()
+    return templates.TemplateResponse(
+        request=request, 
+        name="ci.html", 
+        context={"samples": samples, "ci_analyses": ci_analyses}
+    )
+
+
+@router.get("/dashboard/errors", response_class=HTMLResponse)
+async def errors_page(request: Request, db: Session = Depends(get_db)):
+    """Render dedicated Error Explainer page."""
+    recent_errors = db.query(ErrorExplanation).order_by(ErrorExplanation.id.desc()).limit(10).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="errors.html",
+        context={"recent_errors": recent_errors},
+    )
+
+
+@router.get("/dashboard/rag", response_class=HTMLResponse)
+async def rag_page(request: Request):
+    """Render dedicated RAG Assistant page."""
+    return templates.TemplateResponse(
+        request=request,
+        name="rag.html",
+    )
+
+
+@router.get("/dashboard/ci/sample/{name}", response_class=HTMLResponse)
+async def ci_sample(name: str):
+    """Return sample CI log content for textarea pre-fill."""
+    safe_name = name.replace("/", "").replace("..", "")
+    p = SAMPLES_DIR / f"{safe_name}.log"
+    if p.exists():
+        content = p.read_text(encoding="utf-8", errors="ignore")
+        return HTMLResponse(content=f'<textarea name="log" id="ci-log-input" rows="14" style="width:100%;background:var(--bg-card-input);color:var(--text-main);border:1px solid var(--border-card);border-radius:8px;padding:0.75rem;font-family:var(--font-mono);font-size:0.82rem;resize:vertical;">{content}</textarea>')
+    return HTMLResponse(content="<textarea>Sample not found</textarea>")
+
+
+@router.post("/dashboard/ci/analyze", response_class=HTMLResponse)
+async def ci_analyze_htmx(request: Request, log: str = Form(...)):
+    """HTMX: analyze CI log and return result partial."""
+    llm_client = get_llm_client()
+    analyzer = CIFailureAnalyzer(llm_client=llm_client)
+
+    raw_len = len(log)
+    cleaned = clean_ci_log(log)
+    clean_len = len(cleaned)
+    saved_pct = round(100 * (1 - clean_len / max(raw_len, 1)))
+    category = classify_ci_failure_rules(cleaned)
+
+    try:
+        result = await analyzer.analyze_log(raw_log=log, workflow_name="CI Workflow", job_name="build-and-test")
+    except Exception as e:
+        from app.llm.schemas import CIFailureAnalysisResult
+        result = CIFailureAnalysisResult(failure_category=category, root_cause=str(e), suggested_fix="Check logs.", confidence=0.5)
+
+    # Build a PR comment preview
+    pr_preview = f"""## DevGuard CI Analysis
+
+**Failure Category:** `{result.failure_category}`
+**Confidence:** {result.confidence:.0%}
+
+**Root Cause:**
+{result.root_cause}
+
+**Suggested Fix:**
+{result.suggested_fix}
+
+---
+*Posted by AI DevGuard | Provider: {get_llm_client().__class__.__name__}*"""
+
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/ci_result.html",
+        context={
+            "raw_len": raw_len,
+            "clean_len": clean_len,
+            "saved_pct": saved_pct,
+            "cleaned_preview": cleaned[-2000:],
+            "category": result.failure_category,
+            "result": result,
+            "pr_preview": pr_preview,
+        },
     )

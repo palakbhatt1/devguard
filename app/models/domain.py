@@ -45,6 +45,7 @@ class Finding(Base):
     is_real_secret = Column(Boolean, default=True)
     is_false_positive = Column(Boolean, default=False)
     reasoning = Column(Text, nullable=True)
+    context_snippet = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     repository = relationship("Repository", back_populates="findings")
@@ -83,4 +84,3 @@ class ErrorExplanation(Base):
     line_number = Column(Integer, nullable=True)
     fixed_code_snippet = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-

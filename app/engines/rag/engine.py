@@ -12,6 +12,8 @@ class RAGChunk:
     chunk_index: int
     content: str
     score: float = 0.0
+    matched_terms: list = field(default_factory=list)
+    matched_terms: list = field(default_factory=list)
 
 
 @dataclass
@@ -19,11 +21,11 @@ class RAGQueryResult:
     query: str
     answer: str
     sources: List[RAGChunk] = field(default_factory=list)
-    engine_used: str = "LlamaIndex RAG"
+    engine_used: str = "Keyword RAG"
 
 
 class DevGuardRAG:
-    """RAG-based Codebase & Security Q&A Engine using LlamaIndex / LangChain abstractions."""
+    """RAG-based Codebase & Security Q&A Engine using keyword retrieval and LLM synthesis."""
 
     def __init__(self, workspace_root: str = ".", llm_client: Optional[BaseLLMClient] = None):
         self.workspace_root = os.path.abspath(workspace_root)
@@ -108,6 +110,7 @@ class DevGuardRAG:
                     chunk_index=chunk.chunk_index,
                     content=chunk.content,
                     score=score,
+                    matched_terms=list(meaningful_terms.intersection(chunk_words)),
                 )
                 scored_chunks.append(chunk_copy)
 
@@ -123,7 +126,7 @@ class DevGuardRAG:
                 query=query,
                 answer="No relevant code or documentation found in the workspace matching your query.",
                 sources=[],
-                engine_used="LlamaIndex RAG",
+                engine_used="Keyword RAG",
             )
 
         context_blocks = []
@@ -167,5 +170,5 @@ class DevGuardRAG:
             query=query,
             answer=answer_text,
             sources=retrieved_chunks,
-            engine_used="LlamaIndex / LangChain RAG",
+            engine_used="Keyword RAG",
         )

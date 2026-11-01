@@ -57,18 +57,21 @@ def parse_python_traceback(
             exception_message="Empty traceback provided.",
         )
 
-    # 1. Extract Exception Type and Message from final line
-    last_line = lines[-1].strip()
-    exc_match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_\.]*)\s*:\s*(.*)$", last_line)
-    if exc_match:
-        exception_type = exc_match.group(1)
-        exception_message = exc_match.group(2)
-    elif re.match(r"^[a-zA-Z_][a-zA-Z0-9_\.]*$", last_line):
-        exception_type = last_line
-        exception_message = ""
-    else:
-        exception_type = "RuntimeError"
-        exception_message = last_line
+    # 1. Extract Exception Type and Message from final line or scanning backwards
+    exception_type = "RuntimeError"
+    exception_message = lines[-1].strip()
+    for line in reversed(lines):
+        line_str = line.strip()
+        exc_match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_\.]*)\s*:\s*(.*)$", line_str)
+        if exc_match and not line_str.startswith("File ") and not line_str.startswith("Traceback"):
+            raw_type = exc_match.group(1)
+            exception_type = raw_type.split(".")[-1]
+            exception_message = exc_match.group(2)
+            break
+        elif re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*Error$", line_str) or re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*Exception$", line_str):
+            exception_type = line_str.split(".")[-1]
+            exception_message = ""
+            break
 
     # 2. Extract Frames matching `File "path", line X, in func`
     frame_pattern = re.compile(
@@ -87,7 +90,7 @@ def parse_python_traceback(
 
             # The following line in standard Python traceback is usually the code snippet
             code_line = ""
-            if i + 1 < len(lines) and not frame_pattern.search(lines[i + 1]) and not exc_match:
+            if i + 1 < len(lines) and not frame_pattern.search(lines[i + 1]) and not re.match(r"^[a-zA-Z_][a-zA-Z0-9_\.]*\s*:\s*", lines[i + 1]):
                 code_line = lines[i + 1].strip()
 
             frames.append(

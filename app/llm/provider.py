@@ -130,6 +130,8 @@ class MockLLMClient(BaseLLMClient):
 
         elif response_model == ErrorExplanationResult:
             exc_match = re.search(r"Exception Type:\s*(\w+)", user_prompt)
+            if not exc_match:
+                exc_match = re.search(r"\b([A-Z][a-zA-Z0-9]*(?:Error|Exception))\b", user_prompt)
             exc_type = exc_match.group(1) if exc_match else "RuntimeError"
 
             return ErrorExplanationResult(
@@ -141,19 +143,25 @@ class MockLLMClient(BaseLLMClient):
             )
 
         elif response_model == CIFailureAnalysisResult:
-            category = "unknown"
-            if "dependency" in user_prompt_lower or "pip install" in user_prompt_lower or "npm install" in user_prompt_lower:
-                category = "dependency_install"
-            elif "pytest" in user_prompt_lower or "test failed" in user_prompt_lower or "assertionerror" in user_prompt_lower:
-                category = "failing_test"
-            elif "ruff" in user_prompt_lower or "flake8" in user_prompt_lower or "lint" in user_prompt_lower:
-                category = "lint_error"
-            elif "docker" in user_prompt_lower or "build failed" in user_prompt_lower:
-                category = "docker_build"
-            elif "secret" in user_prompt_lower or "env" in user_prompt_lower or "token missing" in user_prompt_lower:
-                category = "missing_secret"
-            elif "timeout" in user_prompt_lower or "timed out" in user_prompt_lower:
-                category = "timeout"
+            pre_match = re.search(r"Rule Pre-Classification:\s*(\w+)", user_prompt)
+            if pre_match and pre_match.group(1) in [
+                "dependency_install", "failing_test", "lint_error", "docker_build", "missing_secret", "timeout"
+            ]:
+                category = pre_match.group(1)
+            else:
+                category = "unknown"
+                if any(k in user_prompt_lower for k in ["could not find a version", "no matching distribution", "pip install", "npm err", "modulenotfounderror"]):
+                    category = "dependency_install"
+                elif any(k in user_prompt_lower for k in ["pytest", "failed test", "assertionerror"]):
+                    category = "failing_test"
+                elif any(k in user_prompt_lower for k in ["ruff", "flake8", "f401", "e501", "black", "reformat"]):
+                    category = "lint_error"
+                elif any(k in user_prompt_lower for k in ["docker", "dockerfile", "failed to solve"]):
+                    category = "docker_build"
+                elif any(k in user_prompt_lower for k in ["secret not found", "unauthorized", "api key", "token is required"]):
+                    category = "missing_secret"
+                elif any(k in user_prompt_lower for k in ["timed out", "timeout"]):
+                    category = "timeout"
 
             return CIFailureAnalysisResult(
                 failure_category=category,
@@ -179,7 +187,8 @@ def get_llm_client(
     """Factory function to instantiate the configured LLM client."""
     settings = get_settings()
 
-    provider = (provider_override or settings.LLM_PROVIDER).lower()
+    import os
+    provider = (provider_override or os.environ.get("LLM_PROVIDER") or settings.LLM_PROVIDER).lower()
     api_key = api_key_override if api_key_override is not None else settings.LLM_API_KEY
     model = model_override or settings.LLM_MODEL or "gemini-3.1-flash-lite"
     base_url = settings.LLM_BASE_URL

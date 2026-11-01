@@ -23,15 +23,15 @@ async def post_pr_comment(
 
     url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
 
-    comment_body = f"""### 🛡️ AI DevGuard - CI Failure Analysis
+    comment_body = f"""### AI DevGuard - CI Failure Analysis
 
 **Category:** `{analysis.failure_category}`
 **Confidence:** `{analysis.confidence * 100:.0f}%`
 
-#### 🔍 Root Cause Analysis
+#### Root Cause Analysis
 {analysis.root_cause}
 
-#### 💡 Suggested Fix
+#### Suggested Fix
 {analysis.suggested_fix}
 
 ---
