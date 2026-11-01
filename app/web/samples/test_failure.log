@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform linux -- Python 3.11.4, pytest-7.4.0, pluggy-1.2.0
+rootdir: /home/runner/work/devguard/devguard
+collected 14 items
+
+tests/test_api.py ....F.........                                         [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_user_authentication ___________________________
+
+    def test_user_authentication():
+        client = TestClient(app)
+        response = client.get("/api/user/profile")
+>       assert response.status_code == 200
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_api.py:42: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_user_authentication - assert 401 == 200
+========================= 1 failed, 13 passed in 1.45s =========================
+Error: Process completed with exit code 1.

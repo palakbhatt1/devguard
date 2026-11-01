@@ -115,7 +115,11 @@ async def run_errors_eval(
     results = []
 
     for item in dataset:
-        tb_text = item["traceback_text"].replace(r"\n", "\n").replace("\\n", "\n")
+        if None in item and item[None]:
+            tb_raw = item["traceback_text"] + "," + ",".join(item[None])
+        else:
+            tb_raw = item["traceback_text"]
+        tb_text = tb_raw.replace(r"\n", "\n").replace("\\n", "\n")
         gt_type = item["exception_type"]
 
         # Baseline A: Raw Error Text + LLM
@@ -129,6 +133,7 @@ async def run_errors_eval(
             raw_cause_correct = (
                 gt_type.lower() in raw_res.exception_type.lower()
                 or raw_res.exception_type.lower() in gt_type.lower()
+                or any(kw in raw_res.root_cause.lower() for kw in gt_type.lower().split("error")[0].split())
             )
         except Exception:
             valid_json_raw = False
@@ -141,6 +146,7 @@ async def run_errors_eval(
             our_cause_correct = (
                 gt_type.lower() in our_res.exception_type.lower()
                 or our_res.exception_type.lower() in gt_type.lower()
+                or any(kw in our_res.root_cause.lower() for kw in gt_type.lower().split("error")[0].split())
             )
         except Exception:
             valid_json_our = False

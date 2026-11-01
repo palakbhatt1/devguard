@@ -1,4 +1,4 @@
 System,Category Accuracy (%),Avg Time (s),Avg Tokens
-Rule Classifier Only,56.67,0.0,0
-Raw Log + LLM,0.0,5.8696,58.5
-Cleaned Log + Rules + LLM (Our System),96.67,6.7929,58.5
+Rule Classifier Only,56.67,0.0001,0
+Raw Log + LLM,66.67,0.0,58.5
+Cleaned Log + Rules + LLM (Our System),76.67,0.0,58.5

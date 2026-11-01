@@ -1,0 +1,7 @@
+Run ruff check .
+app/engines/secrets/scanner.py:45:89: E501 Line too long (104 > 88 characters)
+app/engines/secrets/scanner.py:67:89: E501 Line too long (95 > 88 characters)
+app/engines/secrets/scanner.py:89:1: F401 `os` imported but unused
+app/api/dashboard.py:102:1: E302 expected 2 blank lines, found 1
+Found 4 errors in 2 files.
+Error: Process completed with exit code 1.
