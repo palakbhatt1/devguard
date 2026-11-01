@@ -2,7 +2,7 @@
   "provider": "mock",
   "model": "offline-mock",
   "is_mock": true,
-  "date": "2026-11-01 20:34:01",
+  "date": "2026-11-01 21:34:34",
   "dataset_size": 115,
   "secrets_count": 60,
   "ci_count": 30,

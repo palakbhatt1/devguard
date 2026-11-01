@@ -2,12 +2,16 @@
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "cli*", "eval*"]
+
 [project]
 name = "devguard"
 version = "0.1.0"
 description = "AI DevGuard - Automated Secret Scanner, Error Explainer, and CI Failure Analyzer"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.28.0",
@@ -39,4 +43,3 @@ target-version = "py312"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-

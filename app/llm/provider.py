@@ -84,12 +84,55 @@ class OpenAICompatibleLLMClient(BaseLLMClient):
                 )
 
 
-class GeminiLLMClient(OpenAICompatibleLLMClient):
-    """Google Gemini LLM client using Google AI Studio OpenAI-compatible endpoint."""
+class GeminiLLMClient(BaseLLMClient):
+    """Google Gemini LLM client using Google Generative Language API with structured JSON output."""
 
-    def __init__(self, api_key: str, model: str = "gemini-3.1-flash-lite", base_url: str = ""):
-        endpoint = base_url or "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-        super().__init__(api_key=api_key, model=model, base_url=endpoint)
+    def __init__(self, api_key: str, model: str = "gemini-2.5-flash", base_url: str = ""):
+        self.api_key = api_key
+        self.model = model or "gemini-2.5-flash"
+        self.base_url = base_url
+
+    async def generate_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        response_model: type[T],
+    ) -> T:
+        schema_str = json.dumps(response_model.model_json_schema())
+        combined_prompt = (
+            f"{system_prompt}\n\n"
+            f"CRITICAL: Respond ONLY with a valid JSON object strictly matching this JSON schema: {schema_str}\n\n"
+            f"Task Input:\n{user_prompt}"
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": combined_prompt}],
+                }
+            ],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.0,
+            },
+        }
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                content = data["candidates"][0]["content"]["parts"][0]["text"]
+                clean_json = extract_json_payload(content)
+                return response_model.model_validate_json(clean_json)
+            except Exception as e:
+                logger.warning(f"Error calling Gemini native endpoint: {e}. Falling back to MockLLMClient.")
+                return await MockLLMClient().generate_structured(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    response_model=response_model,
+                )
 
 
 class OpenAILLMClient(OpenAICompatibleLLMClient):
@@ -209,7 +252,7 @@ def get_llm_client(
     import os
     provider = (provider_override or os.environ.get("LLM_PROVIDER") or settings.LLM_PROVIDER).lower()
     api_key = api_key_override if api_key_override is not None else settings.LLM_API_KEY
-    model = model_override or settings.LLM_MODEL or "gemini-3.1-flash-lite"
+    model = model_override or settings.LLM_MODEL or "gemini-2.5-flash"
     base_url = settings.LLM_BASE_URL
 
     # Fallback to mock if provider is mock or if API key is missing for cloud providers
