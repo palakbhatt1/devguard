@@ -1,4 +1,5 @@
 import os
+import time
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -13,7 +14,6 @@ class RAGChunk:
     content: str
     score: float = 0.0
     matched_terms: list = field(default_factory=list)
-    matched_terms: list = field(default_factory=list)
 
 
 @dataclass
@@ -21,7 +21,8 @@ class RAGQueryResult:
     query: str
     answer: str
     sources: List[RAGChunk] = field(default_factory=list)
-    engine_used: str = "Keyword RAG"
+    engine_used: str = "DevGuard Keyword RAG (TF-IDF Heuristics)"
+    retrieval_time_ms: float = 0.0
 
 
 class DevGuardRAG:
@@ -119,14 +120,17 @@ class DevGuardRAG:
 
     async def query_codebase(self, query: str) -> RAGQueryResult:
         """Answer developer question using retrieved codebase context."""
+        t_start = time.time()
         retrieved_chunks = self.retrieve(query, top_k=4)
+        t_retrieved = round((time.time() - t_start) * 1000, 1)
 
         if not retrieved_chunks:
             return RAGQueryResult(
                 query=query,
                 answer="No relevant code or documentation found in the workspace matching your query.",
                 sources=[],
-                engine_used="Keyword RAG",
+                engine_used="DevGuard Keyword RAG (TF-IDF Heuristics)",
+                retrieval_time_ms=t_retrieved,
             )
 
         context_blocks = []
@@ -170,5 +174,6 @@ class DevGuardRAG:
             query=query,
             answer=answer_text,
             sources=retrieved_chunks,
-            engine_used="Keyword RAG",
+            engine_used="DevGuard Keyword RAG (TF-IDF Heuristics)",
+            retrieval_time_ms=t_retrieved,
         )

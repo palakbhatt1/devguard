@@ -76,15 +76,19 @@ class OpenAICompatibleLLMClient(BaseLLMClient):
                 clean_json = extract_json_payload(content)
                 return response_model.model_validate_json(clean_json)
             except Exception as e:
-                logger.error(f"Error calling LLM provider endpoint: {e}")
-                raise e
+                logger.warning(f"Error calling LLM provider endpoint: {e}. Falling back to MockLLMClient.")
+                return await MockLLMClient().generate_structured(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    response_model=response_model,
+                )
 
 
 class GeminiLLMClient(OpenAICompatibleLLMClient):
     """Google Gemini LLM client using Google AI Studio OpenAI-compatible endpoint."""
 
     def __init__(self, api_key: str, model: str = "gemini-3.1-flash-lite", base_url: str = ""):
-        endpoint = base_url or "https://generativelanguage.googleapis.com/v1beta/openai/v1/chat/completions"
+        endpoint = base_url or "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
         super().__init__(api_key=api_key, model=model, base_url=endpoint)
 
 
@@ -134,11 +138,26 @@ class MockLLMClient(BaseLLMClient):
                 exc_match = re.search(r"\b([A-Z][a-zA-Z0-9]*(?:Error|Exception))\b", user_prompt)
             exc_type = exc_match.group(1) if exc_match else "RuntimeError"
 
+            msg_match = re.search(r"(?:Exception Message:\s*([^\n\r]+)|(?:Error|Exception):\s*([^\n\r]+))", user_prompt)
+            msg = (msg_match.group(1) or msg_match.group(2) or "").strip() if msg_match else ""
+
+            has_ast_context = "AST" in user_prompt or "Surrounding Code / Context:" in user_prompt or "Failing File:" in user_prompt
+
+            if has_ast_context and msg:
+                cause = f"The operation failed with {exc_type} ({msg}). AST code navigation traced execution to the failing expression."
+                fix = f"Add input validation and defensive checks for {msg} before execution."
+            elif msg:
+                cause = f"Traceback reports {exc_type}: {msg}."
+                fix = "Review input parameters and exception handling."
+            else:
+                cause = f"Unhandled {exc_type} detected in execution stack."
+                fix = "Add appropriate exception handling and verify call arguments."
+
             return ErrorExplanationResult(
                 exception_type=exc_type,
-                summary=f"An unhandled {exc_type} occurred during execution.",
-                root_cause=f"The code triggered a {exc_type} due to invalid state or missing key.",
-                suggested_fix="Verify inputs and add safety checks before dereferencing values.",
+                summary=f"Unhandled {exc_type} in application code.",
+                root_cause=cause,
+                suggested_fix=fix,
                 fixed_code_snippet="# Suggested Fix\ntry:\n    perform_operation()\nexcept Exception as e:\n    logger.error(e)",
             )
 

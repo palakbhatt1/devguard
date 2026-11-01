@@ -1,7 +1,9 @@
 import asyncio
 import csv
+import json
 import os
 import sys
+from datetime import datetime
 
 # Ensure root workspace directory is in python path and stdout handles UTF-8
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -9,10 +11,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from typing import Dict, List
-from app.llm import get_llm_client
+from app.config import get_settings
+from app.llm import get_llm_client, MockLLMClient
 from eval.baselines.runners import run_ci_eval, run_errors_eval, run_secrets_eval
-
-
 
 
 def load_csv_dataset(filepath: str) -> List[Dict]:
@@ -53,7 +54,15 @@ async def main():
     print("find secrets, explain errors, and identify CI failures more accurately?")
     print("=" * 70)
 
+    settings = get_settings()
     llm_client = get_llm_client()
+    is_mock = isinstance(llm_client, MockLLMClient)
+    provider_name = "mock" if is_mock else settings.LLM_PROVIDER
+    model_name = "offline-mock" if is_mock else (settings.LLM_MODEL or "gemini-3.1-flash-lite")
+    tag = " (Mock)" if is_mock else f" ({provider_name})"
+
+    print(f"Active Provider: {provider_name} | Model: {model_name}")
+
     eval_dir = os.path.dirname(os.path.abspath(__file__))
 
     # ---------------------------------------------------------
@@ -73,7 +82,7 @@ async def main():
         writer.writerow(["System", "Precision (%)", "Recall (%)", "F1 Score (%)", "False Alarm Rate (%)", "TP", "FP", "FN", "TN"])
         writer.writerow(["Rules Only", m_rules["precision"], m_rules["recall"], m_rules["f1"], m_rules["false_alarm_rate"], m_rules["tp"], m_rules["fp"], m_rules["fn"], m_rules["tn"]])
         writer.writerow(["Detect-Secrets Fallback", m_detect["precision"], m_detect["recall"], m_detect["f1"], m_detect["false_alarm_rate"], m_detect["tp"], m_detect["fp"], m_detect["fn"], m_detect["tn"]])
-        writer.writerow(["Rules + LLM Triage (Our System)", m_our["precision"], m_our["recall"], m_our["f1"], m_our["false_alarm_rate"], m_our["tp"], m_our["fp"], m_our["fn"], m_our["tn"]])
+        writer.writerow([f"Rules + LLM Triage (Our System{tag})", m_our["precision"], m_our["recall"], m_our["f1"], m_our["false_alarm_rate"], m_our["tp"], m_our["fp"], m_our["fn"], m_our["tn"]])
 
     print(f"  -> Saved secrets evaluation results to '{secrets_csv_path}'")
     print(f"     * Rules Only: P={m_rules['precision']}%, R={m_rules['recall']}%, F1={m_rules['f1']}%, FAR={m_rules['false_alarm_rate']}%")
@@ -95,8 +104,8 @@ async def main():
         writer = csv.writer(f)
         writer.writerow(["System", "Category Accuracy (%)", "Avg Time (s)", "Avg Tokens"])
         writer.writerow(["Rule Classifier Only", round(acc_rule, 2), round(sum(r["time_rule"] for r in ci_res)/len(ci_res), 4), 0])
-        writer.writerow(["Raw Log + LLM", round(acc_raw, 2), round(sum(r["time_raw"] for r in ci_res)/len(ci_res), 4), round(sum(r["tokens_raw"] for r in ci_res)/len(ci_res), 1)])
-        writer.writerow(["Cleaned Log + Rules + LLM (Our System)", round(acc_our, 2), round(sum(r["time_our"] for r in ci_res)/len(ci_res), 4), round(sum(r["tokens_our"] for r in ci_res)/len(ci_res), 1)])
+        writer.writerow([f"Raw Log + LLM{tag}", round(acc_raw, 2), round(sum(r["time_raw"] for r in ci_res)/len(ci_res), 4), round(sum(r["tokens_raw"] for r in ci_res)/len(ci_res), 1)])
+        writer.writerow([f"Cleaned Log + Rules + LLM (Our System{tag})", round(acc_our, 2), round(sum(r["time_our"] for r in ci_res)/len(ci_res), 4), round(sum(r["tokens_our"] for r in ci_res)/len(ci_res), 1)])
 
     print(f"  -> Saved CI evaluation results to '{ci_csv_path}'")
     print(f"     * Rule Classifier Only: Accuracy={acc_rule:.2f}%")
@@ -106,7 +115,7 @@ async def main():
     # ---------------------------------------------------------
     # 3. Errors Evaluation
     # ---------------------------------------------------------
-    print("\n[3/3] Running Error Explainer Benchmark (25 Stack Traces)...")
+    print("\n[3/3] Running Error Explainer Benchmark (25 Stack Traces with Strict Root-Cause Scorer)...")
     errors_dataset = load_csv_dataset(os.path.join(eval_dir, "datasets", "traces", "labels.csv"))
     errors_res = await run_errors_eval(errors_dataset, llm_client)
 
@@ -119,12 +128,28 @@ async def main():
     with open(errors_csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["System", "Correct Cause Rate (%)", "Valid JSON Rate (%)"])
-        writer.writerow(["Raw Error Text + LLM", round(raw_cause_rate, 2), round(raw_json_rate, 2)])
-        writer.writerow(["Parsed Frame + Code + LLM (Our System)", round(our_cause_rate, 2), round(our_json_rate, 2)])
+        writer.writerow([f"Raw Error Text + LLM{tag}", round(raw_cause_rate, 2), round(raw_json_rate, 2)])
+        writer.writerow([f"Parsed Frame + Code + LLM (Our System{tag})", round(our_cause_rate, 2), round(our_json_rate, 2)])
 
     print(f"  -> Saved errors evaluation results to '{errors_csv_path}'")
     print(f"     * Raw Error Text + LLM: Cause Accuracy={raw_cause_rate:.2f}%, Valid JSON={raw_json_rate:.2f}%")
     print(f"     * Our System:          Cause Accuracy={our_cause_rate:.2f}%, Valid JSON={our_json_rate:.2f}%")
+
+    # Save benchmark metadata
+    meta = {
+        "provider": provider_name,
+        "model": model_name,
+        "is_mock": is_mock,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "dataset_size": len(secrets_dataset) + len(ci_dataset) + len(errors_dataset),
+        "secrets_count": len(secrets_dataset),
+        "ci_count": len(ci_dataset),
+        "errors_count": len(errors_dataset),
+        "scorer": "strict_root_cause_keyword_matching",
+    }
+    meta_path = os.path.join(eval_dir, "eval_meta.json")
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
 
     # ---------------------------------------------------------
     # Failure Taxonomy Summary Report
@@ -140,7 +165,7 @@ async def main():
     print("3. Error Explainer:")
     print("   - Failure Type 1: Complex meta-programming exceptions lacking local source lines on disk.")
     print("=" * 70)
-    print("✅ Benchmark complete! All CSV tables generated successfully.")
+    print(f"✅ Benchmark complete! All CSV tables and eval_meta.json generated successfully.")
 
 
 if __name__ == "__main__":

@@ -544,18 +544,29 @@
             </svg>
             <span>Secret Scanner Findings</span>
         </div>
-        <!-- HTMX Scan Form -->
-        <form hx-post="/dashboard/scan" hx-target="#findings-table-content" hx-indicator="#scan-loader" style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
-            <input type="text" name="path" value="." class="scan-input" placeholder="Directory or file path..." title="Directory or file path">
-            <button type="submit" class="btn-action-pill" id="btn-scan-path">
-                <span>Scan Path</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
+        <!-- Export & Scan Toolbar -->
+        <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+            <a href="/dashboard/export/findings" download="devguard_findings.json" class="btn-action-pill" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glass); color: #ffffff;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <span id="scan-loader" class="htmx-indicator" style="font-size: 0.75rem; color: #0c1424;">Scanning...</span>
-            </button>
-        </form>
+                <span>Export Findings (JSON)</span>
+            </a>
+            <!-- HTMX Scan Form -->
+            <form hx-post="/dashboard/scan" hx-target="#findings-table-content" hx-indicator="#scan-loader" style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                <input type="text" name="path" value="." class="scan-input" placeholder="Directory or file path..." title="Directory or file path">
+                <button type="submit" class="btn-action-pill" id="btn-scan-path">
+                    <span>Scan Path</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                    <span id="scan-loader" class="htmx-indicator" style="font-size: 0.75rem; color: #0c1424;">Scanning...</span>
+                </button>
+            </form>
+        </div>
     </div>
 
     <div class="table-responsive-wrapper">

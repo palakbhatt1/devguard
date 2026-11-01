@@ -1,4 +1,5 @@
 import asyncio
+import re
 import time
 from typing import Dict, List
 from app.engines.secrets import SecretScanner
@@ -106,11 +107,29 @@ async def run_ci_eval(
     return results
 
 
+def _extract_root_cause_keywords(expected_cause: str) -> List[str]:
+    """Extract significant keywords and identifiers from expected cause string."""
+    stop_words = {
+        "this", "that", "with", "from", "into", "when", "does", "have", "been", "error",
+        "exception", "syntax", "string", "argument", "object", "type", "missing", "invalid",
+        "call", "calling", "line", "most", "recent", "traceback", "file"
+    }
+    # Identifiers in quotes (e.g. 'user_id', 'api_key', 'config.json')
+    quoted = re.findall(r"['\"]([^'\"]+)['\"]", expected_cause)
+    # General domain words length >= 4
+    words = [
+        w.lower() for w in re.findall(r"[a-zA-Z0-9_\.]{3,}", expected_cause)
+        if w.lower() not in stop_words
+    ]
+    combined = list(set([q.lower() for q in quoted] + words))
+    return combined if combined else [expected_cause.lower()]
+
+
 async def run_errors_eval(
     dataset: List[Dict],
     llm_client: BaseLLMClient,
 ) -> List[Dict]:
-    """Run Error Explainer evaluation comparing Raw LLM vs Parsed Frame + Code + LLM."""
+    """Run Error Explainer evaluation comparing Raw LLM vs Parsed Frame + Code + LLM with a strict root-cause keyword scorer."""
     explainer = ErrorExplainer(llm_client=llm_client)
     results = []
 
@@ -121,8 +140,10 @@ async def run_errors_eval(
             tb_raw = item["traceback_text"]
         tb_text = tb_raw.replace(r"\n", "\n").replace("\\n", "\n")
         gt_type = item["exception_type"]
+        expected_cause = item.get("expected_cause", "")
+        keywords = _extract_root_cause_keywords(expected_cause)
 
-        # Baseline A: Raw Error Text + LLM
+        # Baseline A: Raw Error Text + LLM (No AST or local code context)
         valid_json_raw = True
         try:
             raw_res = await llm_client.generate_structured(
@@ -130,24 +151,24 @@ async def run_errors_eval(
                 user_prompt=f"Error text:\n{tb_text}",
                 response_model=ErrorExplanationResult,
             )
-            raw_cause_correct = (
-                gt_type.lower() in raw_res.exception_type.lower()
-                or raw_res.exception_type.lower() in gt_type.lower()
-                or any(kw in raw_res.root_cause.lower() for kw in gt_type.lower().split("error")[0].split())
-            )
+            raw_text_corpus = f"{raw_res.root_cause} {raw_res.summary} {raw_res.suggested_fix or ''}".lower()
+            type_match = gt_type.lower() in raw_res.exception_type.lower() or raw_res.exception_type.lower() in gt_type.lower()
+            keyword_match = any(kw in raw_text_corpus for kw in keywords)
+            # Strict scorer: requires both matching exception type and the root-cause domain keyword
+            raw_cause_correct = type_match and keyword_match
         except Exception:
             valid_json_raw = False
             raw_cause_correct = False
 
-        # Baseline B: Our System (Parsed Frames + Code + LLM)
+        # Baseline B: Our System (Parsed Frames + AST Code Context + LLM)
         valid_json_our = True
         try:
             our_res = await explainer.explain_error(traceback_text=tb_text)
-            our_cause_correct = (
-                gt_type.lower() in our_res.exception_type.lower()
-                or our_res.exception_type.lower() in gt_type.lower()
-                or any(kw in our_res.root_cause.lower() for kw in gt_type.lower().split("error")[0].split())
-            )
+            our_text_corpus = f"{our_res.root_cause} {our_res.summary} {our_res.suggested_fix or ''}".lower()
+            type_match_our = gt_type.lower() in our_res.exception_type.lower() or our_res.exception_type.lower() in gt_type.lower()
+            keyword_match_our = any(kw in our_text_corpus for kw in keywords)
+            # Strict scorer: requires both matching exception type and the root-cause domain keyword
+            our_cause_correct = type_match_our and keyword_match_our
         except Exception:
             valid_json_our = False
             our_cause_correct = False
@@ -155,6 +176,8 @@ async def run_errors_eval(
         results.append({
             "id": item["id"],
             "expected_type": gt_type,
+            "expected_cause": expected_cause,
+            "keywords": keywords,
             "raw_cause_correct": raw_cause_correct,
             "raw_valid_json": valid_json_raw,
             "our_cause_correct": our_cause_correct,

@@ -1,0 +1,11 @@
+{
+  "provider": "mock",
+  "model": "offline-mock",
+  "is_mock": true,
+  "date": "2026-11-01 20:34:01",
+  "dataset_size": 115,
+  "secrets_count": 60,
+  "ci_count": 30,
+  "errors_count": 25,
+  "scorer": "strict_root_cause_keyword_matching"
+}

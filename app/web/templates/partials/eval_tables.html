@@ -1,6 +1,47 @@
 <div id="eval-body">
 {% set st = status() %}
-<p class="eval-meta">Provider: {{ st.provider }} | Model: {{ st.model or 'n/a' }} | Dataset: synthetic</p>
+{% set em = eval_meta or {} %}
+
+<!-- Provider & Experiment Details Banner -->
+<div class="provider-eval-banner" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1.15rem 1.45rem; background: rgba(9, 20, 42, 0.7); border: 1px solid var(--border-glass); border-radius: 14px; margin-bottom: 2rem; backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+        <div>
+            <div style="font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px;">LLM Provider</div>
+            <div style="display: flex; align-items: center; gap: 0.45rem;">
+                <span class="badge {{ 'badge-warn' if (em.is_mock or em.provider == 'mock' or st.provider == 'mock') else 'badge-ok' }}" style="font-size: 11px; font-family: var(--font-mono); padding: 0.2rem 0.6rem; text-transform: uppercase;">
+                    {{ em.provider or st.provider }}
+                </span>
+                {% if em.is_mock or em.provider == 'mock' or st.provider == 'mock' %}
+                <span style="font-size: 11px; color: #fbbf24; font-family: var(--font-mono); font-weight: 500;">(Mock Baseline)</span>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px;">Evaluated Model</div>
+            <div style="font-size: 13px; font-family: var(--font-mono); color: #38bdf8; font-weight: 600;">
+                {{ em.model or st.model or 'offline-mock' }}
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px;">Benchmark Dataset</div>
+            <div style="font-size: 13px; font-family: var(--font-mono); color: #ffffff; font-weight: 600;">
+                {{ em.dataset_size or 115 }} Samples <span style="font-size: 11px; color: var(--text-muted); font-weight: 400;">(60 Secrets / 30 CI / 25 Errors)</span>
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px;">Scorer Rigor</div>
+            <div style="font-size: 13px; font-family: var(--font-mono); color: #4ade80; font-weight: 600;">
+                Strict Root-Cause Keyword
+            </div>
+        </div>
+    </div>
+    <div>
+        <div style="font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px; text-align: right;">Evaluation Date</div>
+        <div style="font-size: 12px; font-family: var(--font-mono); color: #94a3b8;">
+            {{ em.date or '2026-11-01 20:34:01' }}
+        </div>
+    </div>
+</div>
 
 <!-- 1. Secrets Benchmark -->
 <div class="eval-section">

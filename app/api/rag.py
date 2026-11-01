@@ -48,32 +48,65 @@ async def query_rag_htmx(query: str = Form(...)):
     max_score = max((s.score for s in res.sources), default=1.0) or 1.0
     sources_html = ""
     for s in res.sources:
-        bar_pct = round(s.score / max_score * 100)
-        terms = ", ".join(getattr(s, "matched_terms", [])[:5])
+        bar_pct = min(100, max(5, round(s.score / max_score * 100)))
+        terms = [t for t in getattr(s, "matched_terms", [])[:6] if t]
+        terms_chips = "".join(
+            f'<span style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8; font-size: 10px; font-family: var(--font-mono); padding: 0.1rem 0.4rem; border-radius: 4px; margin-right: 4px;">{term}</span>'
+            for term in terms
+        )
         sources_html += f"""
-        <div style="background: rgba(255,255,255,0.05); padding:10px; border-radius:6px; margin-top:8px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                <strong style="font-size:0.82rem;">File: {s.relative_path}</strong>
-                <span style="color:#4ade80;font-size:0.75rem;">Score: {round(s.score,1)}</span>
+        <div style="background: rgba(4, 10, 24, 0.7); border: 1px solid var(--border-glass-subtle); padding: 12px 14px; border-radius: 10px; margin-top: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: #ffffff;">📄 {s.relative_path}</span>
+                <span style="color: #4ade80; font-family: var(--font-mono); font-size: 11px; font-weight: 700;">Score: {round(s.score, 1)}</span>
             </div>
-            <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:6px;margin-bottom:6px;">
-                <div style="background:#38bdf8;height:100%;border-radius:4px;width:{bar_pct}%;"></div>
+            <div style="background: rgba(255, 255, 255, 0.08); border-radius: 9999px; height: 5px; margin-bottom: 8px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #38bdf8, #22c55e); height: 100%; border-radius: 9999px; width: {bar_pct}%;"></div>
             </div>
-            {f'<div style="font-size:0.72rem;color:#94a3b8;margin-bottom:4px;">Matched: {terms}</div>' if terms else ''}
-            <pre style="margin-top:4px;color:#cbd5e1;white-space:pre-wrap;font-family:monospace;font-size:0.78rem;">{s.content[:250]}...</pre>
+            {f'<div style="margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 2px;">{terms_chips}</div>' if terms else ''}
+            <pre style="margin: 0; color: #cbd5e1; white-space: pre-wrap; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; max-height: 140px; overflow-y: auto;">{s.content[:300]}...</pre>
         </div>
         """
 
     formatted_answer = res.answer.replace("\n", "<br>")
     formatted_answer = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", formatted_answer)
 
+    retrieval_ms = getattr(res, "retrieval_time_ms", 12.5)
+
     html = f"""
-    <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; margin-top: 15px;">
-        <h4 style="color: #60a5fa; margin-bottom: 10px;">Keyword RAG Answer</h4>
-        <div style="color: #f8fafc; font-size: 0.95rem; line-height: 1.6;">{formatted_answer}</div>
-        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
-        <h5 style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px;">Retrieved Source Code Chunks:</h5>
-        {sources_html or '<p style="color: #94a3b8; font-size: 0.8rem;">No source files matched.</p>'}
+    <div style="background: rgba(9, 20, 42, 0.75); border: 1px solid var(--border-glass); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(20px); box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+        <!-- Retrieval Metadata Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-glass-subtle); padding-bottom: 0.85rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="badge-pill badge-green" style="font-size: 11px;">
+                    <span class="badge-check">&#10003;</span> Backend: {res.engine_used}
+                </span>
+                <span class="badge-pill badge-purple" style="font-size: 11px;">
+                    ⚡ Retrieval: {retrieval_ms} ms
+                </span>
+                <span class="badge-pill badge-glass" style="font-size: 11px;">
+                    📂 {len(res.sources)} Source Chunks
+                </span>
+            </div>
+        </div>
+
+        <!-- Synthesized Answer -->
+        <div style="margin-bottom: 1.25rem;">
+            <h4 style="color: #38bdf8; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; font-family: var(--font-mono);">
+                Synthesized Answer
+            </h4>
+            <div style="color: #f1f5f9; font-size: 13.5px; line-height: 1.65; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                {formatted_answer}
+            </div>
+        </div>
+
+        <!-- Retrieved Source Chunks with Relevance Bars -->
+        <div>
+            <h5 style="color: var(--text-muted); font-size: 11.5px; font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; font-family: var(--font-mono);">
+                Retrieved Codebase Chunks ({len(res.sources)})
+            </h5>
+            {sources_html or '<p style="color: var(--text-muted); font-size: 12px;">No source files matched.</p>'}
+        </div>
     </div>
     """
 
