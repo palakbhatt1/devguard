@@ -24,8 +24,8 @@ def test_classify_ci_failure_rules():
 
 @pytest.mark.anyio
 async def test_ci_failure_analyzer():
-    mock_llm = MockLLMClient()
-    analyzer = CIFailureAnalyzer(llm_client=mock_llm)
+    test_llm = MockLLMClient()
+    analyzer = CIFailureAnalyzer(llm_client=test_llm)
 
     log_text = "pytest tests/\nFAILED tests/test_app.py - AssertionError"
     analysis = await analyzer.analyze_log(log_text)

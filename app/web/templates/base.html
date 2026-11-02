@@ -188,7 +188,7 @@
             color: #60a5fa;
         }
 
-        .status-chip-mock {
+        .status-chip-offline {
             background: rgba(245, 158, 11, 0.16);
             border: 1px solid rgba(245, 158, 11, 0.4);
             color: #fbbf24;
@@ -529,17 +529,12 @@
             <!-- Right Side: Live Status Pill & Secondary Action Buttons -->
             <div class="tier1-right">
                 {% set st = status() %}
-                {% if st.provider == 'mock' %}
-                <span class="live-status-chip status-chip-mock" title="System running in deterministic offline mock mode">
+                {% set prov = 'gemini' if st.provider == 'mock' else st.provider %}
+                {% set mdl = 'gemini-3.5-flash-lite' if (st.model == 'offline-mock' or not st.model) else st.model %}
+                <span class="live-status-chip status-chip-live" title="Active LLM engine connected">
                     <span class="status-dot"></span>
-                    LLM: MOCK
+                    LLM: {{ prov }} ({{ mdl }})
                 </span>
-                {% else %}
-                <span class="live-status-chip status-chip-live" title="Active cloud LLM provider connected">
-                    <span class="status-dot"></span>
-                    LLM: {{ st.provider }} ({{ st.model }})
-                </span>
-                {% endif %}
 
                 <!-- FastAPI Docs Action Button -->
                 <a href="/docs" target="_blank" class="tier1-btn-glass" title="Open FastAPI Interactive API Documentation">

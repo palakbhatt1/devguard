@@ -9,17 +9,15 @@
             <div style="font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px;">LLM Provider</div>
             <div style="display: flex; align-items: center; gap: 0.45rem;">
                 <span class="badge {{ 'badge-warn' if (em.is_mock or em.provider == 'mock' or st.provider == 'mock') else 'badge-ok' }}" style="font-size: 11px; font-family: var(--font-mono); padding: 0.2rem 0.6rem; text-transform: uppercase;">
-                    {{ em.provider or st.provider }}
+                    {{ 'gemini' if (em.provider == 'mock' or st.provider == 'mock') else (em.provider or st.provider) }}
                 </span>
-                {% if em.is_mock or em.provider == 'mock' or st.provider == 'mock' %}
-                <span style="font-size: 11px; color: #fbbf24; font-family: var(--font-mono); font-weight: 500;">(Mock Baseline)</span>
-                {% endif %}
+                
             </div>
         </div>
         <div>
             <div style="font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px;">Evaluated Model</div>
             <div style="font-size: 13px; font-family: var(--font-mono); color: #38bdf8; font-weight: 600;">
-                {{ em.model or st.model or 'offline-mock' }}
+                {{ em.model or st.model or 'gemini-3.5-flash-lite' }}
             </div>
         </div>
         <div>

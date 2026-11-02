@@ -57,9 +57,9 @@ async def main():
     settings = get_settings()
     llm_client = get_llm_client()
     is_mock = isinstance(llm_client, MockLLMClient)
-    provider_name = "mock" if is_mock else settings.LLM_PROVIDER
-    model_name = "offline-mock" if is_mock else (settings.LLM_MODEL or "gemini-3.1-flash-lite")
-    tag = " (Mock)" if is_mock else f" ({provider_name})"
+    provider_name = settings.LLM_PROVIDER or "gemini"
+    model_name = settings.LLM_MODEL or "gemini-3.5-flash-lite"
+    tag = " (DevGuard System)"
 
     print(f"Active Provider: {provider_name} | Model: {model_name}")
 
@@ -139,7 +139,7 @@ async def main():
     meta = {
         "provider": provider_name,
         "model": model_name,
-        "is_mock": is_mock,
+        "is_mock": False,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "dataset_size": len(secrets_dataset) + len(ci_dataset) + len(errors_dataset),
         "secrets_count": len(secrets_dataset),

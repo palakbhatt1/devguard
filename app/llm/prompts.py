@@ -6,7 +6,7 @@ CRITICAL SECURITY RULE: You will ONLY receive masked secret strings (e.g. `AKIA*
 
 Rules for evaluation:
 - Real secrets look like high-entropy strings, actual API keys, production tokens, or realistic credentials.
-- Placeholders/Decoys contain words like 'example', 'test', 'your_key_here', 'dummy', 'xxxx', '12345678', or standard mock credentials.
+- Placeholders/Decoys contain words like 'example', 'test', 'your_key_here', 'dummy', 'xxxx', '12345678', or standard placeholder test credentials.
 
 You MUST respond strictly with a valid JSON object with the following keys:
 {

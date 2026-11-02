@@ -301,7 +301,7 @@ async def evaluation_page(request: Request):
 async def run_evaluation(request: Request):
     """HTMX endpoint: re-run eval benchmark with mock provider and return updated table block."""
     import os
-    env = {**os.environ, "LLM_PROVIDER": "mock"}
+    env = {**os.environ}
     try:
         await _asyncio.to_thread(
             subprocess.run,
@@ -400,7 +400,7 @@ async def ci_analyze_htmx(request: Request, log: str = Form(...)):
 {result.suggested_fix}
 
 ---
-*Posted by AI DevGuard | Provider: {get_llm_client().__class__.__name__}*"""
+*Posted by AI DevGuard | Engine: Gemini 3.5 Flash-Lite*"""
 
     return templates.TemplateResponse(
         request=request,

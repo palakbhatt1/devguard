@@ -20,8 +20,8 @@ ZeroDivisionError: division by zero"""
 
 @pytest.mark.anyio
 async def test_error_explainer():
-    mock_llm = MockLLMClient()
-    explainer = ErrorExplainer(llm_client=mock_llm)
+    test_llm = MockLLMClient()
+    explainer = ErrorExplainer(llm_client=test_llm)
 
     tb_text = """Traceback (most recent call last):
   File "app/main.py", line 10, in run

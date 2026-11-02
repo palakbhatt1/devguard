@@ -62,7 +62,7 @@ class OpenAICompatibleLLMClient(BaseLLMClient):
             ],
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             try:
                 response = await client.post(self.endpoint, headers=headers, json=payload)
                 # Fallback if response_format is not supported by endpoint
@@ -118,7 +118,7 @@ class GeminiLLMClient(BaseLLMClient):
             },
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             try:
                 response = await client.post(url, json=payload)
                 response.raise_for_status()
@@ -170,7 +170,7 @@ class MockLLMClient(BaseLLMClient):
             return SecretTriageResult(
                 is_real_secret=not is_placeholder,
                 confidence=0.95,
-                reasoning="Mock LLM classified based on placeholder keywords in context."
+                reasoning="Classified based on placeholder keywords in context."
                 if is_placeholder
                 else "Mock LLM detected realistic entropy and string structure.",
             )

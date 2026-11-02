@@ -61,7 +61,8 @@ class SecretScanner:
                     # Extract context snippet (1 line above, current line, 1 line below)
                     start_ctx = max(0, idx - 2)
                     end_ctx = min(len(lines), idx + 1)
-                    context_snippet = "\n".join(lines[start_ctx:end_ctx])
+                    raw_ctx = "\n".join(lines[start_ctx:end_ctx])
+                    context_snippet = raw_ctx.replace(raw_val, masked)
 
                     findings.append(
                         RawFinding(
@@ -92,6 +93,8 @@ class SecretScanner:
 
         # Replace any raw occurrences in context snippet with masked string before sending to LLM
         safe_snippet = finding.context_snippet.replace(finding.raw_value, finding.masked_value)
+        finding.context_snippet = safe_snippet
+        finding.context_snippet = safe_snippet
 
         user_prompt = (
             SECRET_TRIAGE_USER_PROMPT

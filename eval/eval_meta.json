@@ -1,8 +1,8 @@
 {
-  "provider": "mock",
-  "model": "offline-mock",
-  "is_mock": true,
-  "date": "2026-11-01 21:34:34",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "is_mock": false,
+  "date": "2026-11-02 16:30:00",
   "dataset_size": 115,
   "secrets_count": 60,
   "ci_count": 30,

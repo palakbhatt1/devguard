@@ -22,8 +22,8 @@ def test_mask_secret():
 
 @pytest.mark.anyio
 async def test_secret_scanner_detects_aws_key():
-    mock_llm = MockLLMClient()
-    scanner = SecretScanner(llm_client=mock_llm)
+    test_llm = MockLLMClient()
+    scanner = SecretScanner(llm_client=test_llm)
     code_snippet = 'aws_key = "AKIAIOSFODNN7EXAMPLE"'
 
     findings = scanner.scan_text(code_snippet, file_path="test.py")
