@@ -87,9 +87,9 @@ class OpenAICompatibleLLMClient(BaseLLMClient):
 class GeminiLLMClient(BaseLLMClient):
     """Google Gemini LLM client using Google Generative Language API with structured JSON output."""
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash", base_url: str = ""):
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash-lite", base_url: str = ""):
         self.api_key = api_key
-        self.model = model or "gemini-2.5-flash"
+        self.model = model or "gemini-3.5-flash-lite"
         self.base_url = base_url
 
     async def generate_structured(
@@ -252,7 +252,7 @@ def get_llm_client(
     import os
     provider = (provider_override or os.environ.get("LLM_PROVIDER") or settings.LLM_PROVIDER).lower()
     api_key = api_key_override if api_key_override is not None else settings.LLM_API_KEY
-    model = model_override or settings.LLM_MODEL or "gemini-2.5-flash"
+    model = model_override or settings.LLM_MODEL or "gemini-3.5-flash-lite"
     base_url = settings.LLM_BASE_URL
 
     # Fallback to mock if provider is mock or if API key is missing for cloud providers

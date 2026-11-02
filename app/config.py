@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # LLM Settings
     LLM_PROVIDER: Literal["gemini", "openai", "ollama", "mock"] = "gemini"
-    LLM_MODEL: str = "gemini-3.1-flash-lite"
+    LLM_MODEL: str = "gemini-3.5-flash-lite"
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = ""
 

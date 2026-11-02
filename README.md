@@ -10,29 +10,39 @@ AI DevGuard is a production-ready Python service (FastAPI + SQLAlchemy) and CLI 
 
 ```mermaid
 graph TD
-    User([Developer / Pre-commit]) -->|CLI: devguard scan| CLI[DevGuard CLI Typer]
-    User -->|Browser| Web[Web Dashboard Jinja2 + HTMX]
+    User([Developer / Terminal]) -->|CLI: devguard scan --staged| PreCommit[Git Pre-Commit Hook]
+    User -->|CLI: ask, ci-analyze, status, eval| CLI[DevGuard CLI Typer]
+    User -->|Browser: 5 Web Tabs| Web[Web Dashboard Jinja2 + HTMX]
     GitHub([GitHub Actions Webhook]) -->|HTTP POST| Webhook[Webhook Endpoint /webhooks/github]
 
-    subgraph DevGuard Service FastAPI
+    subgraph DevGuard Core Service FastAPI
         Webhook -->|HMAC Verification| SigCheck[Signature Check]
-        SigCheck -->|Async Background Task| LogClean[ANSI Log Cleaner]
-        LogClean -->|Regex Classifier| CIClass[CI Rule Classifier]
-        CIClass -->|Log + Context| LLMWrapper[LLM Provider Wrapper]
+        SigCheck -->|Async Background Task| LogClean[ANSI Log Cleaner & Window Truncator]
+        LogClean -->|70%+ Token Reduction| CIClass[6-Category Rule Classifier]
+        CIClass -->|Cleaned Log + Category| LLMGateway[Structured LLM Gateway]
 
-        CLI --> SecretsEngine[Secret Scanner Engine]
+        PreCommit -->|Exit Code 1 on Leak| SecretsEngine[Secret Scanner Engine]
+        CLI --> SecretsEngine
         Web --> SecretsEngine
-        SecretsEngine -->|Regex + Shannon Entropy| Masker[Masking Engine]
-        Masker -->|Masked String Only| LLMWrapper
+        SecretsEngine -->|Regex Matching| EntropyCheck[Shannon Entropy Filter H >= 3.8]
+        EntropyCheck -->|High-Entropy Token| Masker[Zero-Leak Masking Engine]
+        Masker -->|Masked String Only AKIA****| LLMGateway
 
         CLI --> ErrorEngine[Error Explainer Engine]
         Web --> ErrorEngine
-        ErrorEngine -->|Traceback Frame Parser| LLMWrapper
+        ErrorEngine -->|Frame Parser| ASTNav[AST Semantic Navigator]
+        ASTNav -->|Scope + Calls + Cross-File Imports| DualDiag[Dual Comparative Engine: With vs Without AST]
+        DualDiag --> LLMGateway
+
+        CLI --> RAGEngine[Codebase Keyword RAG Engine]
+        Web --> RAGEngine
+        RAGEngine -->|TF-IDF + Path Weighting| LLMGateway
     end
 
-    LLMWrapper -->|Temperature=0 JSON| Provider[Google Gemini / OpenAI / Ollama / Mock]
-    LLMWrapper -->|Structured Pydantic| DB[(SQLite / PostgreSQL DB)]
-    Provider -->|PR Analysis Comment| GitHub
+    LLMGateway -->|Temperature=0 JSON Schema| Provider[Google Gemini 2.5 Flash / Failover Mock]
+    LLMGateway -->|Structured Pydantic Models| DB[(SQLite StaticPool / PostgreSQL)]
+    Provider -->|Formatted PR Analysis Comment| GitHub
+    Web -->|Sanitized Export| JSONExport[/dashboard/export/findings JSON]
 ```
 
 ---
